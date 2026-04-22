@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="fr">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>🍄 Super HTML Bros — Créateur de Niveaux</title>
+		<link rel="stylesheet" href="styles.css" />
+	</head>
+	<body>
+		<div class="game-title">🍄 SUPER HTML BROS 🍄</div>
+
+		<!-- HUD -->
+		<div class="hud">
+			<span>❤️ VIE : <span class="hud-val" id="h-lives">3</span></span>
+			<span>🪙 PIÈCES : <span class="hud-val" id="h-coins">0</span></span>
+			<span>⭐ SCORE : <span class="hud-val" id="h-score">0</span></span>
+		</div>
+
+		<!-- Canvas -->
+		<div id="game-wrap">
+			<canvas id="gameCanvas" width="800" height="480"></canvas>
+			<div id="overlay">
+				<div class="ov-icon">🍄</div>
+				<div class="ov-title">SUPER HTML BROS</div>
+				<div class="ov-sub">
+					Ajoute tes balises HTML dans la zone élève,<br />
+					puis clique sur <strong style="color: var(--gold)">JOUER</strong> pour tester ton niveau
+					!<br />
+					<br />
+					← → pour bouger · ↑ ou ESPACE pour sauter
+				</div>
+				<button class="play-btn" id="mainPlayBtn">▶ JOUER</button>
+			</div>
+		</div>
+
+		<!-- Touch controls (shown on mobile) -->
+		<div id="touch-pad">
+			<div class="t-btn" id="tb-left">◀</div>
+			<div class="t-btn" id="tb-jump">▲</div>
+			<div class="t-btn" id="tb-right">▶</div>
+		</div>
+
+		<!-- ████████████████████████████████████████████████████████████████
+     █                                                             █
+     █   🎮 ZONE ÉLÈVE — Ajoute tes balises HTML ici !           █
+     █                                                             █
+     █   Chaque balise = un élément du niveau                     █
+     █   data-x = colonne (1 à 25, de gauche à droite)           █
+     █   data-y = ligne   (1 à 15, de haut en bas)               █
+     █                                                             █
+     █   Exemple : <h1 data-x="3" data-y="15"></h1>              █
+     █   Place un bloc de sol en colonne 3, ligne 15             █
+     █                                                             █
+     ████████████████████████████████████████████████████████████████ -->
+		<div id="my-level">
+			<!-- ═══════════════════════════════
+       SOL DU NIVEAU (ligne 15 = bas)
+       ═══════════════════════════════ -->
+			<h1 data-x="1" data-y="1"></h1>
+			<h1 data-x="2" data-y="15"></h1>
+			<h1 data-x="3" data-y="15"></h1>
+			<h1 data-x="4" data-y="15"></h1>
+			<h1 data-x="5" data-y="15"></h1>
+			<h1 data-x="6" data-y="15"></h1>
+			<h1 data-x="7" data-y="15"></h1>
+			<h1 data-x="8" data-y="15"></h1>
+			<h1 data-x="9" data-y="15"></h1>
+			<h1 data-x="10" data-y="15"></h1>
+			<!-- TROU ICI en colonne 11 : Mario peut tomber ! -->
+			<h1 data-x="12" data-y="15"></h1>
+			<h1 data-x="13" data-y="15"></h1>
+			<h1 data-x="14" data-y="15"></h1>
+			<h1 data-x="15" data-y="15"></h1>
+			<h1 data-x="16" data-y="15"></h1>
+			<h1 data-x="17" data-y="15"></h1>
+			<h1 data-x="18" data-y="15"></h1>
+			<h1 data-x="19" data-y="15"></h1>
+			<h1 data-x="20" data-y="15"></h1>
+			<h1 data-x="21" data-y="15"></h1>
+			<h1 data-x="22" data-y="15"></h1>
+			<h1 data-x="23" data-y="15"></h1>
+			<h1 data-x="24" data-y="15"></h1>
+			<h1 data-x="25" data-y="15"></h1>
+
+			<!-- ═══════════════════
+       PLATEFORMES BRIQUES
+       ═══════════════════ -->
+			<h2 data-x="4" data-y="12"></h2>
+			<h2 data-x="5" data-y="12"></h2>
+			<h2 data-x="6" data-y="12"></h2>
+			<h2 data-x="7" data-y="12"></h2>
+
+			<!-- ══════════════════
+       BLOCS QUESTION (?)
+       ══════════════════ -->
+			<h3 data-x="10" data-y="11"></h3>
+			<h3 data-x="20" data-y="10"></h3>
+			<h3 data-x="14" data-y="10"></h3>
+
+			<!-- ══════════
+       TUYAUX
+       ══════════ -->
+			<h4 data-x="13" data-y="14"></h4>
+			<h4 data-x="10" data-y="14"></h4>
+
+			<!-- ═════════════════════
+       NUAGES (plateformes)
+       ═════════════════════ -->
+			<h5 data-x="16" data-y="10"></h5>
+			<h5 data-x="17" data-y="10"></h5>
+			<h5 data-x="18" data-y="10"></h5>
+
+			<!-- ══════
+       PIÈCES
+       ══════ -->
+			<p data-x="4" data-y="11"></p>
+			<p data-x="5" data-y="11"></p>
+			<p data-x="6" data-y="11"></p>
+			<p data-x="7" data-y="11"></p>
+			<p data-x="10" data-y="10"></p>
+			<p data-x="16" data-y="9"></p>
+			<p data-x="17" data-y="9"></p>
+			<p data-x="18" data-y="9"></p>
+			<p data-x="20" data-y="9"></p>
+
+			<!-- ═══════════════════════════════════════
+       ENNEMIS (saute dessus pour les vaincre)
+       ═══════════════════════════════════════ -->
+			<input data-x="22" data-y="14" />
+
+			<!-- ═══════════════════════
+       DRAPEAU (objectif final)
+       ═══════════════════════ -->
+			<h6 data-x="25" data-y="11"></h6>
+
+			<!-- ═══════════════════════════════════════════
+       BOUTON JOUER (facultatif — pas de position)
+       ═══════════════════════════════════════════ -->
+			<button></button>
+		</div>
+
+		<!-- ████████████████ FIN DE LA ZONE ÉLÈVE ████████████████ -->
+
+		<!-- Guide des balises -->
+		<div class="guide">
+			<div class="guide-title">📖 GUIDE DES BALISES HTML</div>
+			<div class="guide-grid">
+				<div class="g-card">
+					<div class="g-icon">🟫</div>
+					<div>
+						<div class="g-tag">&lt;h1 data-x="?" data-y="?"&gt;</div>
+						<div class="g-name">Bloc de SOL — plateforme solide</div>
+						<div class="g-pos">x: 1-25 · y: 1-15</div>
+					</div>
+				</div>
+				<div class="g-card">
+					<div class="g-icon">🧱</div>
+					<div>
+						<div class="g-tag">&lt;h2 data-x="?" data-y="?"&gt;</div>
+						<div class="g-name">BRIQUE — plateforme en briques</div>
+						<div class="g-pos">x: 1-25 · y: 1-15</div>
+					</div>
+				</div>
+				<div class="g-card">
+					<div class="g-icon">❓</div>
+					<div>
+						<div class="g-tag">&lt;h3 data-x="?" data-y="?"&gt;</div>
+						<div class="g-name">BLOC ? — frappe dessous = pièce !</div>
+						<div class="g-pos">x: 1-25 · y: 1-15</div>
+					</div>
+				</div>
+				<div class="g-card">
+					<div class="g-icon">🟢</div>
+					<div>
+						<div class="g-tag">&lt;h4 data-x="?" data-y="?"&gt;</div>
+						<div class="g-name">TUYAU — obstacle vert (2 cases)</div>
+						<div class="g-pos">x: 1-25 · y: 1-14</div>
+					</div>
+				</div>
+				<div class="g-card">
+					<div class="g-icon">☁️</div>
+					<div>
+						<div class="g-tag">&lt;h5 data-x="?" data-y="?"&gt;</div>
+						<div class="g-name">NUAGE — plateforme traversable</div>
+						<div class="g-pos">x: 1-25 · y: 1-15</div>
+					</div>
+				</div>
+				<div class="g-card">
+					<div class="g-icon">🚩</div>
+					<div>
+						<div class="g-tag">&lt;h6 data-x="?" data-y="?"&gt;</div>
+						<div class="g-name">DRAPEAU — objectif de fin !</div>
+						<div class="g-pos">x: 1-25 · y: 1-13</div>
+					</div>
+				</div>
+				<div class="g-card">
+					<div class="g-icon">🪙</div>
+					<div>
+						<div class="g-tag">&lt;p data-x="?" data-y="?"&gt;</div>
+						<div class="g-name">PIÈCE — à collecter (+50 pts)</div>
+						<div class="g-pos">x: 1-25 · y: 1-15</div>
+					</div>
+				</div>
+				<div class="g-card">
+					<div class="g-icon">👾</div>
+					<div>
+						<div class="g-tag">&lt;input data-x="?" data-y="?"&gt;</div>
+						<div class="g-name">ENNEMI — saute dessus pour gagner</div>
+						<div class="g-pos">x: 1-25 · y: 1-14</div>
+					</div>
+				</div>
+				<div class="g-card">
+					<div class="g-icon">▶️</div>
+					<div>
+						<div class="g-tag">&lt;button&gt;</div>
+						<div class="g-name">JOUER — lance le jeu</div>
+						<div class="g-pos">Pas de data-x ni data-y !</div>
+					</div>
+				</div>
+			</div>
+			<div class="ctrl-hint">
+				⌨️ Clavier : ← → pour bouger · ↑ ou ESPACE pour sauter · ENTRÉE pour recommencer<br />
+				📱 Mobile : utilise les boutons ◀ ▲ ▶ ci-dessus
+			</div>
+		</div>
+
+		<script src="app.js"></script>
+	</body>
+</html>

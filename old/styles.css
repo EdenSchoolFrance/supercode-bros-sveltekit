@@ -1,0 +1,250 @@
+/* ╔═══════════════════════════════════════════════════════╗
+   ║  CSS — NE PAS MODIFIER / DO NOT MODIFY               ║
+   ╚═══════════════════════════════════════════════════════╝ */
+
+@import url("https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap");
+
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+/* Cache les balises HTML de la zone élève (JS les lit) */
+#my-level {
+	display: none !important;
+}
+
+:root {
+	--gold: #f8b800;
+	--red: #cc2200;
+	--dark: #0d0d1a;
+	--darker: #070710;
+	--panel: #111122;
+	--border: rgba(248, 184, 0, 0.3);
+	--text: #e8e8ff;
+}
+
+html,
+body {
+	background: var(--darker);
+	font-family: "Press Start 2P", monospace;
+	color: var(--text);
+	min-height: 100vh;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	padding: 16px;
+	gap: 14px;
+}
+
+/* ── Title ── */
+.game-title {
+	font-size: clamp(0.9em, 3vw, 1.5em);
+	color: var(--gold);
+	text-shadow:
+		3px 3px 0 var(--red),
+		6px 6px 0 rgba(0, 0, 0, 0.4);
+	letter-spacing: 3px;
+	text-align: center;
+	animation: titlePulse 3s ease-in-out infinite;
+}
+@keyframes titlePulse {
+	0%,
+	100% {
+		text-shadow:
+			3px 3px 0 var(--red),
+			6px 6px 0 rgba(0, 0, 0, 0.4);
+	}
+	50% {
+		text-shadow:
+			3px 3px 0 var(--red),
+			6px 6px 0 rgba(0, 0, 0, 0.4),
+			0 0 20px rgba(248, 184, 0, 0.4);
+	}
+}
+
+/* ── HUD ── */
+.hud {
+	display: flex;
+	gap: 24px;
+	flex-wrap: wrap;
+	justify-content: center;
+	background: var(--panel);
+	border: 2px solid var(--border);
+	padding: 8px 24px;
+	font-size: 0.6em;
+}
+.hud-val {
+	color: var(--gold);
+}
+
+/* ── Game Wrap ── */
+#game-wrap {
+	position: relative;
+	line-height: 0;
+	max-width: 100%;
+	overflow: hidden;
+}
+
+#gameCanvas {
+	display: block;
+	max-width: 100%;
+	height: auto;
+	border: 4px solid var(--gold);
+	box-shadow:
+		0 0 30px rgba(248, 184, 0, 0.25),
+		0 0 80px rgba(248, 184, 0, 0.1),
+		inset 0 0 60px rgba(0, 0, 0, 0.3);
+	image-rendering: pixelated;
+	image-rendering: crisp-edges;
+}
+
+/* ── Overlay ── */
+#overlay {
+	position: absolute;
+	inset: 4px;
+	background: rgba(0, 0, 10, 0.82);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 16px;
+	backdrop-filter: blur(3px);
+}
+
+.ov-icon {
+	font-size: 3em;
+}
+.ov-title {
+	font-size: clamp(0.9em, 3vw, 1.6em);
+	color: var(--gold);
+	text-shadow: 4px 4px 0 var(--red);
+	text-align: center;
+}
+.ov-sub {
+	font-family: "Courier New", monospace;
+	font-size: clamp(0.7em, 2vw, 0.85em);
+	color: #aab;
+	text-align: center;
+	max-width: 380px;
+	line-height: 1.8;
+}
+
+.play-btn {
+	all: unset;
+	cursor: pointer;
+	display: inline-block;
+	background: #009900;
+	color: #fff;
+	font-family: "Press Start 2P", monospace;
+	font-size: clamp(0.55em, 2vw, 0.85em);
+	padding: 14px 48px;
+	border: 3px solid #006600;
+	box-shadow: 0 6px 0 #003300;
+	transition:
+		box-shadow 0.08s,
+		transform 0.08s;
+	margin-top: 8px;
+	letter-spacing: 2px;
+}
+.play-btn:hover {
+	background: #00bb00;
+	transform: translateY(-2px);
+	box-shadow: 0 8px 0 #003300;
+}
+.play-btn:active {
+	transform: translateY(4px);
+	box-shadow: 0 2px 0 #003300;
+}
+
+/* ── Touch Pad ── */
+#touch-pad {
+	display: none;
+	gap: 10px;
+	align-items: center;
+}
+@media (pointer: coarse) {
+	#touch-pad {
+		display: flex;
+	}
+}
+
+.t-btn {
+	background: rgba(255, 255, 255, 0.12);
+	border: 2px solid rgba(255, 255, 255, 0.25);
+	color: #fff;
+	font-family: "Press Start 2P", monospace;
+	font-size: 0.85em;
+	width: 60px;
+	height: 60px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 10px;
+	cursor: pointer;
+	user-select: none;
+	-webkit-user-select: none;
+	-webkit-tap-highlight-color: transparent;
+}
+.t-btn:active {
+	background: rgba(255, 255, 255, 0.25);
+}
+
+/* ── Guide ── */
+.guide {
+	background: var(--panel);
+	border: 2px solid var(--border);
+	padding: 20px;
+	max-width: 808px;
+	width: 100%;
+}
+.guide-title {
+	font-size: 0.65em;
+	color: var(--gold);
+	text-align: center;
+	margin-bottom: 16px;
+	letter-spacing: 2px;
+}
+.guide-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+	gap: 8px;
+}
+.g-card {
+	background: rgba(255, 255, 255, 0.03);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	padding: 10px 12px;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+.g-icon {
+	font-size: 1.8em;
+	flex-shrink: 0;
+}
+.g-tag {
+	font-size: 0.5em;
+	color: #79c0ff;
+}
+.g-name {
+	font-family: "Courier New", monospace;
+	font-size: 0.65em;
+	color: #99a;
+	margin-top: 4px;
+}
+.g-pos {
+	font-family: "Courier New", monospace;
+	font-size: 0.6em;
+	color: #667;
+	margin-top: 2px;
+}
+
+.ctrl-hint {
+	font-family: "Courier New", monospace;
+	font-size: 0.7em;
+	color: #556;
+	text-align: center;
+	margin-top: 14px;
+	line-height: 1.8;
+}
