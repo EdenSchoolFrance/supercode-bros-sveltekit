@@ -1,6 +1,6 @@
 # sv
 
-![video](./docs/video.mp4)
+![video](./docs/image.png)
 
 Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
 
