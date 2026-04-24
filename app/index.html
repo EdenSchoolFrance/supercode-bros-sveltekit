@@ -60,7 +60,7 @@
 		 -->
 		<div id="my-level">
 			<!-- ═══════ SOL DU NIVEAU (ligne 15 = bas) ═══════ -->
-			<h1 data-x="1" data-y="1"></h1>
+			<h1 data-x="1" data-y="15"></h1>
 			<h1 data-x="2" data-y="15"></h1>
 			<h1 data-x="3" data-y="15"></h1>
 			<h1 data-x="4" data-y="15"></h1>
@@ -93,16 +93,16 @@
 			<h2 data-x="7" data-y="12"></h2>
 
 			<!-- ═══════ BLOCS OBJETS (?) ═══════ -->
-			<h3 data-x="10" data-y="11"></h3>
+			<h3 class="red" data-x="10" data-y="11"></h3>
 			<h3 data-x="20" data-y="10"></h3>
 			<h3 data-x="14" data-y="10"></h3>
 
 			<!-- ═══════ TUYAUX ═══════ -->
-			<a id="pipe-a" data-x="13" data-y="14" href="#pipe-b"></a>
+			<a class="red" id="pipe-a" data-x="13" data-y="14" href="#pipe-b"></a>
 			<a id="pipe-b" data-x="10" data-y="14" href="#pipe-a"></a>
 
 			<!-- ═══════ NUAGES (plateformes) ═══════ -->
-			<h5 data-x="16" data-y="10"></h5>
+			<h5 class="red" data-x="16" data-y="10"></h5>
 			<h5 data-x="17" data-y="10"></h5>
 			<h5 data-x="18" data-y="10"></h5>
 
@@ -117,11 +117,13 @@
 			<p data-x="18" data-y="9"></p>
 			<p data-x="20" data-y="9"></p>
 
+			<hr data-x="20" data-y="8" />
+
 			<!-- ═══════ ENNEMIS (saute dessus pour les vaincre) ═══════ -->
-			<input data-x="22" data-y="14" />
+			<input class="red" data-x="22" data-y="14" />
 
 			<!-- ═══════ DRAPEAU (objectif final) ═══════ -->
-			<h6 data-x="25" data-y="11"></h6>
+			<h6 class="red" data-x="25" data-y="11"></h6>
 		</div>
 
 		<!-- ████████████████ FIN DE LA ZONE ÉLÈVE ████████████████
@@ -161,6 +163,14 @@
 						<div class="g-tag">&lt;a id="?" data-x="?" data-y="?" href="#?"&gt;</div>
 						<div class="g-name">TUYAU — obstacle vert · ↓ pour téléporter</div>
 						<div class="g-pos">x: 1-25 · y: 1-14 · href="#id-du-tuyau-cible"</div>
+					</div>
+				</div>
+				<div class="g-card">
+					<div class="g-icon">🔺</div>
+					<div>
+						<div class="g-tag">&lt;hr data-x="?" data-y="?"&gt;</div>
+						<div class="g-name">PIC — toucher = dégâts !</div>
+						<div class="g-pos">x: 1-25 · y: 1-15</div>
 					</div>
 				</div>
 				<div class="g-card">

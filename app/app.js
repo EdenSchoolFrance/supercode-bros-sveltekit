@@ -23,9 +23,9 @@ const ENEMY_H = 24;
 const ENEMY_SPD = 1.3;
 
 const COLOR_FILTERS = {
-	red:   'sepia(1) saturate(6) hue-rotate(0deg)',
+	red:   'sepia(1) saturate(6) hue-rotate(322deg)',
 	green: 'sepia(1) saturate(6) hue-rotate(80deg)',
-	blue:  'sepia(1) saturate(6) hue-rotate(195deg)',
+	blue:  'sepia(1) saturate(6) hue-rotate(200deg)',
 };
 
 function getColorClass(el) {
@@ -156,7 +156,7 @@ function parseLevel() {
 
 	document
 		.querySelectorAll(
-			'#my-level h1,#my-level h2,#my-level h3,#my-level a,#my-level h5,#my-level h6,#my-level p,#my-level input,#my-level button'
+			'#my-level h1,#my-level h2,#my-level h3,#my-level a,#my-level h5,#my-level h6,#my-level hr,#my-level p,#my-level input,#my-level button'
 		)
 		.forEach((el) => {
 			const tag = el.tagName.toLowerCase();
@@ -192,6 +192,9 @@ function parseLevel() {
 				}
 				case 'h5':
 					addTile(gx, gy, 'cloud', colorClass);
+					break;
+				case 'hr':
+					addTile(gx, gy, 'spike', colorClass);
 					break;
 				case 'h6':
 					goalCell = { gx, gy, colorClass };
@@ -481,6 +484,27 @@ function update() {
 	else player.walkTick = 0;
 
 	if (player.invincible > 0) player.invincible--;
+
+	// ── Spike damage ──
+	if (player.onGround && player.invincible === 0) {
+		const footTileY = Math.floor((player.y + player.h) / TILE);
+		const txL = Math.floor(player.x / TILE);
+		const txR = Math.floor((player.x + player.w - 1) / TILE);
+		for (let tx = txL; tx <= txR; tx++) {
+			const b = getTile(tx, footTileY);
+			if (b && b.type === 'spike') {
+				lives--;
+				player.invincible = 80;
+				player.vy = -9;
+				updateHUD();
+				if (lives <= 0) {
+					gameState = 'dead';
+					setTimeout(() => showOverlay('dead'), 700);
+				}
+				break;
+			}
+		}
+	}
 
 	// ── Pipe entry ──
 	if (K.downPress) {
@@ -830,6 +854,26 @@ function drawBlock(b) {
 			cloudArc(x - 2, y + 6, 0.68);
 			ctx.fill();
 			break;
+
+		case 'spike': {
+			// Base plate
+			ctx.fillStyle = '#3c3c3c';
+			ctx.fillRect(x, y + 14, T, T - 14);
+			ctx.fillStyle = '#555';
+			ctx.fillRect(x, y + 14, T, 2);
+			// 4 spike points
+			for (let i = 0; i < 4; i++) {
+				const cx = x + i * 8 + 4;
+				ctx.fillStyle = '#d0d0d0'; ctx.fillRect(cx - 1, y,      2, 2); // tip
+				ctx.fillStyle = '#909090'; ctx.fillRect(cx - 2, y +  2,  4, 4); // upper body
+				ctx.fillStyle = '#b8b8b8'; ctx.fillRect(cx - 2, y +  2,  1, 4); // left highlight
+				ctx.fillStyle = '#585858'; ctx.fillRect(cx + 1, y +  2,  1, 4); // right shadow
+				ctx.fillStyle = '#707070'; ctx.fillRect(cx - 3, y +  6,  6, 8); // lower body
+				ctx.fillStyle = '#888';    ctx.fillRect(cx - 3, y +  6,  1, 8); // left highlight
+				ctx.fillStyle = '#484848'; ctx.fillRect(cx + 2, y +  6,  1, 8); // right shadow
+			}
+			break;
+		}
 	}
 
 	ctx.restore();

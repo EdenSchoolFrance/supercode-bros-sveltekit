@@ -38,6 +38,13 @@
 			attrs: 'id="?" data-x="?" data-y="?" href="#?"'
 		},
 		{
+			tag: 'hr',
+			icon: '🔺',
+			name: 'Pic',
+			desc: 'Toucher = dégâts ! (pic de fer)',
+			attrs: 'data-x="?" data-y="?"'
+		},
+		{
 			tag: 'h5',
 			icon: '☁️',
 			name: 'Nuage',
@@ -155,6 +162,7 @@
 				<span class="tag"><code>&lt;h2&gt;</code> Brique</span>
 				<span class="tag"><code>&lt;h3&gt;</code> Bloc ?</span>
 				<span class="tag"><code>&lt;a&gt;</code> Tuyau ↓</span>
+				<span class="tag"><code>&lt;hr&gt;</code> Pic ☠</span>
 				<span class="tag"><code>&lt;h5&gt;</code> Nuage</span>
 				<span class="tag"><code>&lt;h6&gt;</code> Drapeau</span>
 				<span class="tag"><code>&lt;p&gt;</code> Pièce</span>

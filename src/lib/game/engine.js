@@ -8,9 +8,9 @@ import {
 } from './constants.js';
 
 const COLOR_FILTERS = {
-	red:   'sepia(1) saturate(6) hue-rotate(0deg)',
+	red:   'sepia(1) saturate(6) hue-rotate(322deg)',
 	green: 'sepia(1) saturate(6) hue-rotate(80deg)',
-	blue:  'sepia(1) saturate(6) hue-rotate(195deg)',
+	blue:  'sepia(1) saturate(6) hue-rotate(200deg)',
 };
 
 function getColorClass(el) {
@@ -115,7 +115,7 @@ export class GameEngine {
 		const parser = new DOMParser();
 		const doc = parser.parseFromString(`<div>${htmlString}</div>`, 'text/html');
 
-		doc.querySelectorAll('h1,h2,h3,a,h5,h6,p,input,button').forEach((el) => {
+		doc.querySelectorAll('h1,h2,h3,a,h5,h6,hr,p,input,button').forEach((el) => {
 			const tag = el.tagName.toLowerCase();
 			if (tag === 'button') return;
 
@@ -142,6 +142,7 @@ export class GameEngine {
 					break;
 				}
 				case 'h5': this._addTile(gx, gy, 'cloud', colorClass); break;
+				case 'hr': this._addTile(gx, gy, 'spike', colorClass); break;
 				case 'h6': this._goalCell = { gx, gy, colorClass }; break;
 				case 'p': this._coins.push({ gx, gy, collected: false, colorClass }); break;
 				case 'input': this._enemies.push(this._makeEnemy(gx, gy, colorClass)); break;
@@ -407,6 +408,27 @@ export class GameEngine {
 		else p.walkTick = 0;
 
 		if (p.invincible > 0) p.invincible--;
+
+		// ── Spike damage ────────────────────────────────────────────────────
+		if (p.onGround && p.invincible === 0) {
+			const footTileY = Math.floor((p.y + p.h) / TILE);
+			const txL = Math.floor(p.x / TILE);
+			const txR = Math.floor((p.x + p.w - 1) / TILE);
+			for (let tx = txL; tx <= txR; tx++) {
+				const b = this._getTile(tx, footTileY);
+				if (b && b.type === 'spike') {
+					this._lives--;
+					p.invincible = 80;
+					p.vy = -9;
+					this._notifyState();
+					if (this._lives <= 0) {
+						this._gameState = 'dead';
+						setTimeout(() => this._notifyState(), 700);
+					}
+					break;
+				}
+			}
+		}
 
 		// ── Pipe entry ──────────────────────────────────────────────────────
 		if (this._K.downPress) {
@@ -720,6 +742,24 @@ export class GameEngine {
 				this._cloudArc(x - 2, y + 6, 0.68);
 				ctx.fill();
 				break;
+
+			case 'spike': {
+				ctx.fillStyle = '#3c3c3c';
+				ctx.fillRect(x, y + 14, T, T - 14);
+				ctx.fillStyle = '#555';
+				ctx.fillRect(x, y + 14, T, 2);
+				for (let i = 0; i < 4; i++) {
+					const cx = x + i * 8 + 4;
+					ctx.fillStyle = '#d0d0d0'; ctx.fillRect(cx - 1, y,      2, 2);
+					ctx.fillStyle = '#909090'; ctx.fillRect(cx - 2, y +  2,  4, 4);
+					ctx.fillStyle = '#b8b8b8'; ctx.fillRect(cx - 2, y +  2,  1, 4);
+					ctx.fillStyle = '#585858'; ctx.fillRect(cx + 1, y +  2,  1, 4);
+					ctx.fillStyle = '#707070'; ctx.fillRect(cx - 3, y +  6,  6, 8);
+					ctx.fillStyle = '#888';    ctx.fillRect(cx - 3, y +  6,  1, 8);
+					ctx.fillStyle = '#484848'; ctx.fillRect(cx + 2, y +  6,  1, 8);
+				}
+				break;
+			}
 		}
 		ctx.restore();
 	}
