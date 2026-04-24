@@ -7,6 +7,18 @@ import {
 	PLAYER_W, PLAYER_H, ENEMY_W, ENEMY_H, ENEMY_SPD
 } from './constants.js';
 
+const COLOR_FILTERS = {
+	red:   'sepia(1) saturate(6) hue-rotate(0deg)',
+	green: 'sepia(1) saturate(6) hue-rotate(80deg)',
+	blue:  'sepia(1) saturate(6) hue-rotate(195deg)',
+};
+
+function getColorClass(el) {
+	const classes = (el.className || '').split(' ');
+	for (const c of ['red', 'green', 'blue']) if (classes.includes(c)) return c;
+	return null;
+}
+
 export class GameEngine {
 	constructor(canvas, onStateChange) {
 		this._canvas = canvas;
@@ -29,9 +41,14 @@ export class GameEngine {
 		this._coinCount = 0;
 		this._score = 0;
 
-		this._K = { left: false, right: false, jump: false };
+		this._K = { left: false, right: false, jump: false, down: false, downPress: false };
 		this._jumpBuffer = 0;  // frames remaining to honour a queued jump
 		this._coyoteTime = 0;  // frames remaining after leaving ground
+
+		this._pipes = [];
+
+		this._showGrid = false;
+		this._hoveredCell = null;
 
 		this._boundKeyDown = this._onKeyDown.bind(this);
 		this._boundKeyUp = this._onKeyUp.bind(this);
@@ -49,7 +66,10 @@ export class GameEngine {
 	// ── Input ──────────────────────────────────────────────────────────────
 
 	_onKeyDown(e) {
-		const gameKey = ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' ','a','d','w'].includes(e.key);
+		const tag = e.target?.tagName?.toLowerCase();
+		if (tag === 'input' || tag === 'textarea' || e.target?.isContentEditable) return;
+
+		const gameKey = ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' ','a','d','w','s'].includes(e.key);
 		if (gameKey && this._gameState === 'playing') e.preventDefault();
 
 		if (e.key === 'ArrowLeft'  || e.key === 'a') this._K.left = true;
@@ -58,15 +78,23 @@ export class GameEngine {
 			if (!this._K.jump) this._jumpBuffer = 8; // queue jump for up to 8 frames
 			this._K.jump = true;
 		}
+		if (e.key === 'ArrowDown' || e.key === 's') {
+			if (!this._K.down) this._K.downPress = true;
+			this._K.down = true;
+		}
 		if (e.key === 'Enter' && this._gameState !== 'playing') {
 			this._onStateChange({ action: 'play-requested' });
 		}
 	}
 
 	_onKeyUp(e) {
+		const tag = e.target?.tagName?.toLowerCase();
+		if (tag === 'input' || tag === 'textarea' || e.target?.isContentEditable) return;
+
 		if (e.key === 'ArrowLeft'  || e.key === 'a') this._K.left = false;
 		if (e.key === 'ArrowRight' || e.key === 'd') this._K.right = false;
 		if (e.key === 'ArrowUp' || e.key === 'w' || e.key === ' ') this._K.jump = false;
+		if (e.key === 'ArrowDown' || e.key === 's') this._K.down = false;
 	}
 
 	pressKey(key, pressed) {
@@ -82,11 +110,12 @@ export class GameEngine {
 		this._coins = [];
 		this._enemies = [];
 		this._goalCell = null;
+		this._pipes = [];
 
 		const parser = new DOMParser();
 		const doc = parser.parseFromString(`<div>${htmlString}</div>`, 'text/html');
 
-		doc.querySelectorAll('h1,h2,h3,h4,h5,h6,p,input,button').forEach((el) => {
+		doc.querySelectorAll('h1,h2,h3,a,h5,h6,p,input,button').forEach((el) => {
 			const tag = el.tagName.toLowerCase();
 			if (tag === 'button') return;
 
@@ -97,18 +126,25 @@ export class GameEngine {
 			const gx = Math.max(0, Math.min(COLS - 1, rawX - 1));
 			const gy = Math.max(0, Math.min(ROWS - 1, rawY - 1));
 
+			const colorClass = getColorClass(el);
 			switch (tag) {
-				case 'h1': this._addTile(gx, gy, 'ground'); break;
-				case 'h2': this._addTile(gx, gy, 'brick'); break;
-				case 'h3': this._addTile(gx, gy, 'question'); break;
-				case 'h4':
-					this._addTile(gx, Math.min(gy, ROWS - 2), 'pipe_top');
-					this._addTile(gx, Math.min(gy + 1, ROWS - 1), 'pipe_body');
+				case 'h1': this._addTile(gx, gy, 'ground', colorClass); break;
+				case 'h2': this._addTile(gx, gy, 'brick', colorClass); break;
+				case 'h3': this._addTile(gx, gy, 'question', colorClass); break;
+				case 'a': {
+					const pipeGy = Math.min(gy, ROWS - 2);
+					this._addTile(gx, pipeGy, 'pipe_top', colorClass);
+					this._addTile(gx, Math.min(gy + 1, ROWS - 1), 'pipe_body', colorClass);
+					const pipeId = el.id || null;
+					const hrefAttr = el.getAttribute('href');
+					const linkedTo = hrefAttr ? hrefAttr.replace(/^#/, '') : null;
+					this._pipes.push({ id: pipeId, linkedTo, gx, gy: pipeGy });
 					break;
-				case 'h5': this._addTile(gx, gy, 'cloud'); break;
-				case 'h6': this._goalCell = { gx, gy }; break;
-				case 'p': this._coins.push({ gx, gy, collected: false }); break;
-				case 'input': this._enemies.push(this._makeEnemy(gx, gy)); break;
+				}
+				case 'h5': this._addTile(gx, gy, 'cloud', colorClass); break;
+				case 'h6': this._goalCell = { gx, gy, colorClass }; break;
+				case 'p': this._coins.push({ gx, gy, collected: false, colorClass }); break;
+				case 'input': this._enemies.push(this._makeEnemy(gx, gy, colorClass)); break;
 			}
 		});
 
@@ -124,8 +160,8 @@ export class GameEngine {
 		this._player = this._makePlayer(sx, sy);
 	}
 
-	_addTile(gx, gy, type) {
-		const b = { gx, gy, type, used: false };
+	_addTile(gx, gy, type, colorClass = null) {
+		const b = { gx, gy, type, used: false, colorClass };
 		this._tileMap[`${gx},${gy}`] = b;
 		this._blockList.push(b);
 	}
@@ -134,19 +170,31 @@ export class GameEngine {
 		return this._tileMap[`${gx},${gy}`] || null;
 	}
 
+	_getPipeUnderPlayer() {
+		const p = this._player;
+		if (!p.onGround) return null;
+		const footTileY = Math.floor((p.y + p.h + 1) / TILE);
+		const centerTileX = Math.floor((p.x + p.w / 2) / TILE);
+		const tile = this._getTile(centerTileX, footTileY);
+		if (!tile || tile.type !== 'pipe_top') return null;
+		return this._pipes.find(pipe => pipe.gx === centerTileX && pipe.gy === footTileY) || null;
+	}
+
 	// ── Game objects ───────────────────────────────────────────────────────
 
 	_makePlayer(x, y) {
-		return { x, y, vx: 0, vy: 0, w: PLAYER_W, h: PLAYER_H, onGround: false, dir: 1, walkTick: 0, invincible: 0, coyote: 0 };
+		return { x, y, vx: 0, vy: 0, w: PLAYER_W, h: PLAYER_H, onGround: false, dir: 1, walkTick: 0, invincible: 0, coyote: 0,
+			pipeState: null, pipeTick: 0, pipeClipY: 0, pipeLinkedTo: null };
 	}
 
-	_makeEnemy(gx, gy) {
+	_makeEnemy(gx, gy, colorClass = null) {
 		return {
 			x: gx * TILE + (TILE - ENEMY_W) / 2,
 			y: gy * TILE + (TILE - ENEMY_H),
 			w: ENEMY_W, h: ENEMY_H,
 			vx: -ENEMY_SPD, vy: 0,
-			onGround: false, alive: true, squishTimer: 0
+			onGround: false, alive: true, squishTimer: 0,
+			colorClass
 		};
 	}
 
@@ -274,6 +322,16 @@ export class GameEngine {
 		this._render();
 	}
 
+	setGrid(show) {
+		this._showGrid = show;
+		if (this._gameState !== 'playing') this._render();
+	}
+
+	setHoveredCell(col, row) {
+		this._hoveredCell = col !== null ? { col, row } : null;
+		if (this._gameState !== 'playing') this._render();
+	}
+
 	_loop() {
 		if (this._gameState !== 'playing') return;
 		this._frame++;
@@ -284,6 +342,37 @@ export class GameEngine {
 
 	_update() {
 		const p = this._player;
+
+		// ── Pipe animation (freeze normal physics) ──────────────────────────
+		if (p.pipeState === 'entering') {
+			p.pipeTick++;
+			if (p.pipeTick >= 30) {
+				const dest = this._pipes.find(pipe => pipe.id === p.pipeLinkedTo);
+				if (dest) {
+					p.x = dest.gx * TILE + (TILE - p.w) / 2;
+					p.y = dest.gy * TILE;
+					p.pipeClipY = dest.gy * TILE;
+					p.pipeState = 'exiting';
+					p.pipeTick = 0;
+				} else {
+					p.pipeState = null;
+				}
+			}
+			this._updateParticles();
+			return;
+		}
+		if (p.pipeState === 'exiting') {
+			p.pipeTick++;
+			if (p.pipeTick >= 30) {
+				p.y = p.pipeClipY - p.h;
+				p.vx = 0;
+				p.vy = 0;
+				p.onGround = true;
+				p.pipeState = null;
+			}
+			this._updateParticles();
+			return;
+		}
 
 		if (this._K.left) { p.vx = -MOVE_SPD; p.dir = -1; }
 		else if (this._K.right) { p.vx = MOVE_SPD; p.dir = 1; }
@@ -318,6 +407,22 @@ export class GameEngine {
 		else p.walkTick = 0;
 
 		if (p.invincible > 0) p.invincible--;
+
+		// ── Pipe entry ──────────────────────────────────────────────────────
+		if (this._K.downPress) {
+			this._K.downPress = false;
+			if (p.onGround) {
+				const pipe = this._getPipeUnderPlayer();
+				if (pipe && pipe.linkedTo) {
+					p.pipeState = 'entering';
+					p.pipeTick = 0;
+					p.pipeClipY = pipe.gy * TILE;
+					p.pipeLinkedTo = pipe.linkedTo;
+					p.vx = 0;
+					p.vy = 0;
+				}
+			}
+		}
 
 		// Enemies
 		for (const e of this._enemies) {
@@ -423,6 +528,7 @@ export class GameEngine {
 		p.vx = 0;
 		p.vy = 0;
 		p.invincible = 80;
+		p.pipeState = null;
 	}
 
 	_overlap(a, b) {
@@ -452,8 +558,8 @@ export class GameEngine {
 
 		this._drawBgClouds();
 		for (const b of this._blockList) this._drawBlock(b);
-		if (this._goalCell) this._drawFlag(this._goalCell.gx, this._goalCell.gy);
-		for (const c of this._coins) if (!c.collected) this._drawCoin(c.gx, c.gy);
+		if (this._goalCell) this._drawFlag(this._goalCell.gx, this._goalCell.gy, this._goalCell.colorClass);
+		for (const c of this._coins) if (!c.collected) this._drawCoin(c.gx, c.gy, c.colorClass);
 		for (const e of this._enemies) this._drawEnemy(e);
 		if (this._player) this._drawPlayer();
 
@@ -466,6 +572,61 @@ export class GameEngine {
 			ctx.fillText(p.text, p.x, p.y);
 		}
 		ctx.globalAlpha = 1;
+		ctx.restore();
+
+		if (this._showGrid) this._drawGrid();
+	}
+
+	_drawGrid() {
+		const ctx = this._ctx;
+		ctx.save();
+
+		if (this._hoveredCell) {
+			ctx.fillStyle = 'rgba(248,184,0,0.22)';
+			ctx.fillRect(this._hoveredCell.col * TILE, this._hoveredCell.row * TILE, TILE, TILE);
+		}
+
+		ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+		ctx.lineWidth = 1;
+		for (let col = 0; col <= COLS; col++) {
+			ctx.beginPath();
+			ctx.moveTo(col * TILE, 0);
+			ctx.lineTo(col * TILE, GH);
+			ctx.stroke();
+		}
+		for (let row = 0; row <= ROWS; row++) {
+			ctx.beginPath();
+			ctx.moveTo(0, row * TILE);
+			ctx.lineTo(GW, row * TILE);
+			ctx.stroke();
+		}
+
+		if (this._hoveredCell) {
+			const cx = this._hoveredCell.col;
+			const cy = this._hoveredCell.row;
+			const label = `x:${cx + 1}  y:${cy + 1}`;
+
+			ctx.font = 'bold 10px "Courier New", monospace';
+			ctx.textAlign = 'left';
+			ctx.textBaseline = 'top';
+			const tw = ctx.measureText(label).width + 12;
+			const th = 18;
+
+			let bx = cx * TILE + TILE / 2 - tw / 2;
+			let by = cy * TILE - th - 5;
+			if (by < 0) by = cy * TILE + TILE + 5;
+			bx = Math.max(2, Math.min(GW - tw - 2, bx));
+
+			ctx.fillStyle = 'rgba(0,0,0,0.85)';
+			ctx.fillRect(bx, by, tw, th);
+			ctx.strokeStyle = '#f8b800';
+			ctx.lineWidth = 1.5;
+			ctx.strokeRect(bx, by, tw, th);
+
+			ctx.fillStyle = '#f8b800';
+			ctx.fillText(label, bx + 6, by + 4);
+		}
+
 		ctx.restore();
 	}
 
@@ -498,6 +659,7 @@ export class GameEngine {
 		const y = b.gy * TILE;
 		const T = TILE;
 		ctx.save();
+		if (b.colorClass) ctx.filter = COLOR_FILTERS[b.colorClass];
 
 		switch (b.type) {
 			case 'ground':
@@ -562,25 +724,47 @@ export class GameEngine {
 		ctx.restore();
 	}
 
-	_drawCoin(gx, gy) {
+	_drawCoin(gx, gy, colorClass) {
 		const ctx = this._ctx;
-		const cx = gx * TILE + TILE / 2;
-		const cy = gy * TILE + TILE / 2 + Math.sin(this._frame * 0.1 + gx * 0.7) * 3;
-		const sh = Math.floor(this._frame / 9) % 5;
-
-		ctx.fillStyle = '#f8b800';
-		ctx.beginPath(); ctx.arc(cx, cy, 9, 0, Math.PI * 2); ctx.fill();
-		ctx.fillStyle = '#ffee55';
-		ctx.beginPath(); ctx.arc(cx - 2, cy - 2, 4, 0, Math.PI * 2); ctx.fill();
-
-		if (sh < 2) {
-			ctx.fillStyle = 'rgba(255,255,255,0.55)';
-			ctx.fillRect(cx - 4 + sh * 5, cy - 8, 2, 16);
-		}
+		ctx.save();
+		if (colorClass) ctx.filter = COLOR_FILTERS[colorClass];
+		const bob = Math.sin(this._frame * 0.1 + gx * 0.7) * 3;
+		const ox = gx * TILE + 8;
+		const oy = Math.round(gy * TILE + 8 + bob);
+		const B = '#c87800', Y = '#f8b800', W = '#fff8b0';
+		// 8×8 logical pixel art coin (each pixel = 2×2 px, total 16×16 px)
+		// Row 0: _ _ B B B B _ _
+		ctx.fillStyle = B;
+		ctx.fillRect(ox + 4,  oy,      8, 2);
+		// Row 1: _ B Y Y Y Y B _
+		ctx.fillRect(ox + 2,  oy + 2,  2, 2); ctx.fillRect(ox + 12, oy + 2,  2, 2);
+		ctx.fillStyle = Y; ctx.fillRect(ox + 4,  oy + 2,  8, 2);
+		// Row 2: B W W Y Y Y Y B
+		ctx.fillStyle = B; ctx.fillRect(ox,      oy + 4,  2, 2); ctx.fillRect(ox + 14, oy + 4,  2, 2);
+		ctx.fillStyle = W; ctx.fillRect(ox + 2,  oy + 4,  4, 2);
+		ctx.fillStyle = Y; ctx.fillRect(ox + 6,  oy + 4,  8, 2);
+		// Row 3: B W W Y Y Y Y B
+		ctx.fillStyle = B; ctx.fillRect(ox,      oy + 6,  2, 2); ctx.fillRect(ox + 14, oy + 6,  2, 2);
+		ctx.fillStyle = W; ctx.fillRect(ox + 2,  oy + 6,  4, 2);
+		ctx.fillStyle = Y; ctx.fillRect(ox + 6,  oy + 6,  8, 2);
+		// Row 4: B Y Y Y Y Y Y B
+		ctx.fillStyle = B; ctx.fillRect(ox,      oy + 8,  2, 2); ctx.fillRect(ox + 14, oy + 8,  2, 2);
+		ctx.fillStyle = Y; ctx.fillRect(ox + 2,  oy + 8,  12, 2);
+		// Row 5: B Y Y Y Y Y Y B
+		ctx.fillStyle = B; ctx.fillRect(ox,      oy + 10, 2, 2); ctx.fillRect(ox + 14, oy + 10, 2, 2);
+		ctx.fillStyle = Y; ctx.fillRect(ox + 2,  oy + 10, 12, 2);
+		// Row 6: _ B Y Y Y Y B _
+		ctx.fillStyle = B; ctx.fillRect(ox + 2,  oy + 12, 2, 2); ctx.fillRect(ox + 12, oy + 12, 2, 2);
+		ctx.fillStyle = Y; ctx.fillRect(ox + 4,  oy + 12, 8, 2);
+		// Row 7: _ _ B B B B _ _
+		ctx.fillStyle = B; ctx.fillRect(ox + 4,  oy + 14, 8, 2);
+		ctx.restore();
 	}
 
-	_drawFlag(gx, gy) {
+	_drawFlag(gx, gy, colorClass) {
 		const ctx = this._ctx;
+		ctx.save();
+		if (colorClass) ctx.filter = COLOR_FILTERS[colorClass];
 		const px = gx * TILE + TILE / 2;
 		const py = gy * TILE;
 		const ph = TILE * 3;
@@ -596,12 +780,15 @@ export class GameEngine {
 
 		ctx.fillStyle = '#f8b800';
 		ctx.beginPath(); ctx.arc(px, py - ph, 5, 0, Math.PI * 2); ctx.fill();
+		ctx.restore();
 	}
 
 	_drawEnemy(e) {
 		const ctx = this._ctx;
 		const x = Math.round(e.x);
 		const y = Math.round(e.y);
+		ctx.save();
+		if (e.colorClass) ctx.filter = COLOR_FILTERS[e.colorClass];
 
 		if (!e.alive) {
 			if (e.squishTimer > 0) {
@@ -610,6 +797,7 @@ export class GameEngine {
 				ctx.fillRect(x + 2, y + e.h - 6, 4, 4);
 				ctx.fillRect(x + e.w - 6, y + e.h - 6, 4, 4);
 			}
+			ctx.restore();
 			return;
 		}
 
@@ -639,15 +827,33 @@ export class GameEngine {
 		} else {
 			ctx.fillRect(x, y + e.h - 4, 9, 4); ctx.fillRect(x + e.w - 7, y + e.h - 6, 9, 6);
 		}
+		ctx.restore();
 	}
 
 	_drawPlayer() {
 		const ctx = this._ctx;
 		const p = this._player;
 		const x = Math.round(p.x);
-		const y = Math.round(p.y);
 
 		if (p.invincible > 0 && Math.floor(p.invincible / 5) % 2 === 1) return;
+
+		// Pipe animation: slide into / out of pipe with clipping
+		let y = Math.round(p.y);
+		let pipeClip = false;
+		if (p.pipeState === 'entering') {
+			y = Math.round(p.y + (p.pipeTick / 30) * p.h);
+			pipeClip = true;
+		} else if (p.pipeState === 'exiting') {
+			y = Math.round(p.pipeClipY - (p.pipeTick / 30) * p.h);
+			pipeClip = true;
+		}
+
+		if (pipeClip) {
+			ctx.save();
+			ctx.beginPath();
+			ctx.rect(0, 0, GW, p.pipeClipY);
+			ctx.clip();
+		}
 
 		const wf = p.onGround ? Math.floor(p.walkTick / 7) % 3 : -1;
 
@@ -703,5 +909,6 @@ export class GameEngine {
 		}
 
 		ctx.restore();
+		if (pipeClip) ctx.restore();
 	}
 }

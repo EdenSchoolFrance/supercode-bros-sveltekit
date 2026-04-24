@@ -1,11 +1,14 @@
 <script>
 	import { onMount } from 'svelte';
 	import { GameEngine } from '$lib/game/engine.js';
+	import { TILE, COLS, ROWS } from '$lib/game/constants.js';
 
 	let { htmlCode } = $props();
 
 	/** @type {HTMLCanvasElement} */
 	let canvas;
+	/** @type {HTMLDivElement} */
+	let canvasWrap;
 	/** @type {import('$lib/game/engine.js').GameEngine | undefined} */
 	let engine;
 
@@ -14,6 +17,8 @@
 	let coinCount = $state(0);
 	let score = $state(0);
 	let playRequested = $state(false);
+	let showGrid = $state(false);
+	let isFullscreen = $state(false);
 
 	onMount(() => {
 		const eng = new GameEngine(canvas, (/** @type {any} */ s) => {
@@ -31,7 +36,13 @@
 		eng.loadLevel(htmlCode);
 		eng.renderStatic();
 
-		return () => eng.destroy();
+		const onFsChange = () => { isFullscreen = !!document.fullscreenElement; };
+		document.addEventListener('fullscreenchange', onFsChange);
+
+		return () => {
+			eng.destroy();
+			document.removeEventListener('fullscreenchange', onFsChange);
+		};
 	});
 
 	$effect(() => {
@@ -73,6 +84,38 @@
 		gameState = 'playing';
 	}
 
+	function handleFullscreen() {
+		if (!document.fullscreenElement) {
+			canvasWrap?.requestFullscreen();
+		} else {
+			document.exitFullscreen();
+		}
+	}
+
+	function handleGridToggle() {
+		showGrid = !showGrid;
+		engine?.setGrid(showGrid);
+	}
+
+	/** @param {MouseEvent} e */
+	function handleCanvasMouseMove(e) {
+		if (!showGrid || !engine) return;
+		const rect = canvas.getBoundingClientRect();
+		const mx = (e.clientX - rect.left) * (canvas.width / rect.width);
+		const my = (e.clientY - rect.top) * (canvas.height / rect.height);
+		const col = Math.floor(mx / TILE);
+		const row = Math.floor(my / TILE);
+		if (col >= 0 && col < COLS && row >= 0 && row < ROWS) {
+			engine.setHoveredCell(col, row);
+		} else {
+			engine.setHoveredCell(null, 0);
+		}
+	}
+
+	function handleCanvasMouseLeave() {
+		engine?.setHoveredCell(null, 0);
+	}
+
 	/** @param {HTMLElement} node @param {string} key */
 	function bindTouchBtn(node, key) {
 		const down = () => engine?.pressKey(key, true);
@@ -98,14 +141,25 @@
 	</div>
 
 	<!-- Canvas area -->
-	<div class="canvas-wrap">
-		<canvas bind:this={canvas} width="800" height="480"></canvas>
+	<div class="canvas-wrap" bind:this={canvasWrap}>
+		<canvas
+			bind:this={canvas}
+			width="800"
+			height="480"
+			onmousemove={handleCanvasMouseMove}
+			onmouseleave={handleCanvasMouseLeave}
+		></canvas>
+		<button
+			class="fullscreen-btn"
+			onclick={handleFullscreen}
+			title={isFullscreen ? 'Quitter le plein écran' : 'Plein écran'}
+		>{isFullscreen ? '✕' : '⛶'}</button>
 
 		<!-- Menu overlay -->
 		{#if gameState === 'menu'}
 			<div class="overlay">
 				<div class="ov-icon">🍄</div>
-				<div class="ov-title">SUPER HTML BROS</div>
+				<div class="ov-title">SUPER CODE BROS</div>
 				<div class="ov-sub">
 					Écris tes balises HTML dans l'éditeur,<br />
 					puis clique sur <strong>JOUER</strong> pour tester ton niveau !<br /><br />
@@ -140,6 +194,9 @@
 			</div>
 		{/if}
 	</div>
+
+	<!-- Grid toggle -->
+	<button class="grid-btn" class:active={showGrid} onclick={handleGridToggle}>▦ GRILLE</button>
 
 	<!-- Touch controls -->
 	<div class="touch-pad">
@@ -196,6 +253,55 @@
 			0 0 80px rgba(248, 184, 0, 0.1);
 		image-rendering: pixelated;
 		image-rendering: crisp-edges;
+	}
+
+	/* ── Fullscreen button ── */
+	.fullscreen-btn {
+		all: unset;
+		position: absolute;
+		top: 10px;
+		right: 10px;
+		z-index: 20;
+		cursor: pointer;
+		background: rgba(0, 0, 0, 0.55);
+		color: #f8b800;
+		border: 1.5px solid rgba(248, 184, 0, 0.35);
+		width: 30px;
+		height: 30px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 1em;
+		opacity: 0.7;
+		transition: opacity 0.15s;
+	}
+
+	.fullscreen-btn:hover {
+		opacity: 1;
+	}
+
+	/* ── Fullscreen mode ── */
+	.canvas-wrap:fullscreen,
+	.canvas-wrap:-webkit-full-screen {
+		background: #000;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 100%;
+		height: 100%;
+		line-height: 0;
+	}
+
+	.canvas-wrap:fullscreen canvas,
+	.canvas-wrap:-webkit-full-screen canvas {
+		width: auto !important;
+		height: 100% !important;
+		max-width: 100%;
+	}
+
+	.canvas-wrap:fullscreen .overlay,
+	.canvas-wrap:-webkit-full-screen .overlay {
+		inset: 0;
 	}
 
 	.overlay {
@@ -258,6 +364,34 @@
 	.play-btn:active {
 		transform: translateY(4px);
 		box-shadow: 0 2px 0 #003300;
+	}
+
+	.grid-btn {
+		all: unset;
+		cursor: pointer;
+		font-family: 'Press Start 2P', monospace;
+		font-size: 0.5em;
+		color: #778;
+		border: 2px solid rgba(255, 255, 255, 0.12);
+		padding: 8px 18px;
+		letter-spacing: 1px;
+		background: #111122;
+		flex-shrink: 0;
+		transition:
+			color 0.1s,
+			border-color 0.1s,
+			background 0.1s;
+	}
+
+	.grid-btn:hover {
+		color: #dde;
+		border-color: rgba(255, 255, 255, 0.3);
+	}
+
+	.grid-btn.active {
+		color: #f8b800;
+		border-color: #f8b800;
+		background: rgba(248, 184, 0, 0.08);
 	}
 
 	.touch-pad {

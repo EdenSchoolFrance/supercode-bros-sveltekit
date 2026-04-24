@@ -46,8 +46,8 @@ export const defaultLevel = `
 <!-- ══════════
      TUYAUX
      ══════════ -->
-<h4 data-x="10" data-y="14"></h4>
-<h4 data-x="13" data-y="14"></h4>
+<a id="tuyau-1" data-x="10" data-y="14" href="#tuyau-2"></a>
+<a id="tuyau-2" data-x="13" data-y="14" href="#tuyau-1"></a>
 
 <!-- ═════════════════════
      NUAGES (plateformes)

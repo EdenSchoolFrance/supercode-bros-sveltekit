@@ -3,11 +3,11 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>🍄 Super HTML Bros — Créateur de Niveaux</title>
+		<title>🍄 Super Code Bros — Créateur de Niveaux</title>
 		<link rel="stylesheet" href="styles.css" />
 	</head>
 	<body>
-		<div class="game-title">🍄 SUPER HTML BROS 🍄</div>
+		<div class="game-title">🍄 SUPER CODE BROS 🍄</div>
 
 		<!-- HUD -->
 		<div class="hud">
@@ -19,19 +19,23 @@
 		<!-- Canvas -->
 		<div id="game-wrap">
 			<canvas id="gameCanvas" width="800" height="480"></canvas>
+			<button id="fullscreen-btn" class="fullscreen-btn" title="Plein écran">⛶</button>
 			<div id="overlay">
 				<div class="ov-icon">🍄</div>
-				<div class="ov-title">SUPER HTML BROS</div>
+				<div class="ov-title">SUPER CODE BROS</div>
 				<div class="ov-sub">
 					Ajoute tes balises HTML dans la zone élève,<br />
 					puis clique sur <strong style="color: var(--gold)">JOUER</strong> pour tester ton niveau
 					!<br />
 					<br />
-					← → pour bouger · ↑ ou ESPACE pour sauter
+					← → pour bouger · ↑ ou ESPACE pour sauter · ↓ sur un tuyau pour téléporter
 				</div>
 				<button class="play-btn" id="mainPlayBtn">▶ JOUER</button>
 			</div>
 		</div>
+
+		<!-- Grid toggle -->
+		<button id="grid-toggle-btn" class="grid-btn">▦ GRILLE</button>
 
 		<!-- Touch controls (shown on mobile) -->
 		<div id="touch-pad">
@@ -94,8 +98,8 @@
 			<h3 data-x="14" data-y="10"></h3>
 
 			<!-- ═══════ TUYAUX ═══════ -->
-			<h4 data-x="13" data-y="14"></h4>
-			<h4 data-x="10" data-y="14"></h4>
+			<a id="pipe-a" data-x="13" data-y="14" href="#pipe-b"></a>
+			<a id="pipe-b" data-x="10" data-y="14" href="#pipe-a"></a>
 
 			<!-- ═══════ NUAGES (plateformes) ═══════ -->
 			<h5 data-x="16" data-y="10"></h5>
@@ -120,7 +124,8 @@
 			<h6 data-x="25" data-y="11"></h6>
 		</div>
 
-		<!-- ████████████████ FIN DE LA ZONE ÉLÈVE ████████████████ -->
+		<!-- ████████████████ FIN DE LA ZONE ÉLÈVE ████████████████
+		 -->
 
 		<!-- Guide des balises -->
 		<div class="guide">
@@ -153,9 +158,9 @@
 				<div class="g-card">
 					<div class="g-icon">🟢</div>
 					<div>
-						<div class="g-tag">&lt;h4 data-x="?" data-y="?"&gt;</div>
-						<div class="g-name">TUYAU — obstacle vert (2 cases)</div>
-						<div class="g-pos">x: 1-25 · y: 1-14</div>
+						<div class="g-tag">&lt;a id="?" data-x="?" data-y="?" href="#?"&gt;</div>
+						<div class="g-name">TUYAU — obstacle vert · ↓ pour téléporter</div>
+						<div class="g-pos">x: 1-25 · y: 1-14 · href="#id-du-tuyau-cible"</div>
 					</div>
 				</div>
 				<div class="g-card">
@@ -200,7 +205,8 @@
 				</div>
 			</div>
 			<div class="ctrl-hint">
-				⌨️ Clavier : ← → pour bouger · ↑ ou ESPACE pour sauter · ENTRÉE pour recommencer<br />
+				⌨️ Clavier : ← → pour bouger · ↑ ou ESPACE pour sauter · ↓ sur un tuyau lié pour téléporter
+				· ENTRÉE pour recommencer<br />
 				📱 Mobile : utilise les boutons ◀ ▲ ▶ ci-dessus
 			</div>
 		</div>

@@ -31,11 +31,11 @@
 			attrs: 'data-x="?" data-y="?"'
 		},
 		{
-			tag: 'h4',
+			tag: 'a',
 			icon: '🟢',
 			name: 'Tuyau',
-			desc: 'Obstacle vert (2 cases)',
-			attrs: 'data-x="?" data-y="?"'
+			desc: '↓ sur un tuyau lié = téléportation !',
+			attrs: 'id="?" data-x="?" data-y="?" href="#?"'
 		},
 		{
 			tag: 'h5',
@@ -92,7 +92,7 @@
 
 <div class="page">
 	<header class="header">
-		<div class="title">🍄 SUPER HTML BROS 🍄</div>
+		<div class="title">🍄 SUPER CODE BROS 🍄</div>
 		<div class="subtitle">Crée ton niveau en HTML · Joue-le en direct !</div>
 	</header>
 
@@ -154,7 +154,7 @@
 				<span class="tag"><code>&lt;h1&gt;</code> Sol</span>
 				<span class="tag"><code>&lt;h2&gt;</code> Brique</span>
 				<span class="tag"><code>&lt;h3&gt;</code> Bloc ?</span>
-				<span class="tag"><code>&lt;h4&gt;</code> Tuyau</span>
+				<span class="tag"><code>&lt;a&gt;</code> Tuyau ↓</span>
 				<span class="tag"><code>&lt;h5&gt;</code> Nuage</span>
 				<span class="tag"><code>&lt;h6&gt;</code> Drapeau</span>
 				<span class="tag"><code>&lt;p&gt;</code> Pièce</span>
