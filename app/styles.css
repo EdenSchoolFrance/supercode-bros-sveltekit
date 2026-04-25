@@ -291,8 +291,12 @@ body {
 	gap: 12px;
 }
 .g-icon {
-	font-size: 1.8em;
+	width: 40px;
+	height: 40px;
+	object-fit: contain;
 	flex-shrink: 0;
+	image-rendering: pixelated;
+	font-size: 1.8em;
 }
 .g-tag {
 	font-size: 0.5em;

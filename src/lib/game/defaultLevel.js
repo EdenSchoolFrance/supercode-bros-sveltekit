@@ -72,7 +72,7 @@ export const defaultLevel = `
 <!-- ════════════════════════════════════
      ENNEMIS  (saute dessus pour vaincre)
      ════════════════════════════════════ -->
-<input data-x="22" data-y="14" />
+<input name="goomba" data-x="22" data-y="14" />
 
 <!-- ═══════════════════════
      DRAPEAU (objectif final)

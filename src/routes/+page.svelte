@@ -2,6 +2,16 @@
 	import CodeEditor from '$lib/components/CodeEditor.svelte';
 	import GameCanvas from '$lib/components/GameCanvas.svelte';
 	import { defaultLevel } from '$lib/game/defaultLevel.js';
+	import imgSol      from '$lib/assets/sol.png';
+	import imgBrique   from '$lib/assets/brique.png';
+	import imgQuestion from '$lib/assets/question.png';
+	import imgTuyau    from '$lib/assets/tuyau.png';
+	import imgSpike    from '$lib/assets/spike.png';
+	import imgCloud    from '$lib/assets/cloud.png';
+	import imgDrapeau  from '$lib/assets/drapeau.png';
+	import imgPiece    from '$lib/assets/piece.png';
+	import imgGoomba   from '$lib/assets/goomba.png';
+	import imgMario    from '$lib/assets/mario.png';
 
 	let code = $state(defaultLevel);
 	let splitPos = $state(45); // left panel % width
@@ -9,69 +19,16 @@
 	let legendOpen = $state(false);
 
 	const TAGS = [
-		{
-			tag: 'h1',
-			icon: '🟫',
-			name: 'Sol',
-			desc: 'Plateforme solide',
-			attrs: 'data-x="?" data-y="?"'
-		},
-		{
-			tag: 'h2',
-			icon: '🧱',
-			name: 'Brique',
-			desc: 'Plateforme en briques',
-			attrs: 'data-x="?" data-y="?"'
-		},
-		{
-			tag: 'h3',
-			icon: '❓',
-			name: 'Bloc ?',
-			desc: 'Frappe dessous = pièce !',
-			attrs: 'data-x="?" data-y="?"'
-		},
-		{
-			tag: 'a',
-			icon: '🟢',
-			name: 'Tuyau',
-			desc: '↓ sur un tuyau lié = téléportation !',
-			attrs: 'id="?" data-x="?" data-y="?" href="#?"'
-		},
-		{
-			tag: 'hr',
-			icon: '🔺',
-			name: 'Pic',
-			desc: 'Toucher = dégâts ! (pic de fer)',
-			attrs: 'data-x="?" data-y="?"'
-		},
-		{
-			tag: 'h5',
-			icon: '☁️',
-			name: 'Nuage',
-			desc: 'Plateforme traversable',
-			attrs: 'data-x="?" data-y="?"'
-		},
-		{
-			tag: 'h6',
-			icon: '🚩',
-			name: 'Drapeau',
-			desc: 'Objectif de fin de niveau',
-			attrs: 'data-x="?" data-y="?"'
-		},
-		{
-			tag: 'p',
-			icon: '🪙',
-			name: 'Pièce',
-			desc: 'À collecter (+50 pts)',
-			attrs: 'data-x="?" data-y="?"'
-		},
-		{
-			tag: 'input',
-			icon: '👾',
-			name: 'Ennemi',
-			desc: 'Saute dessus pour vaincre',
-			attrs: 'data-x="?" data-y="?"'
-		}
+		{ tag: 'h1',    img: imgSol,      name: 'Sol',           desc: 'Plateforme solide',                              attrs: 'data-x="?" data-y="?"' },
+		{ tag: 'h2',    img: imgBrique,   name: 'Brique',        desc: 'Plateforme en briques',                          attrs: 'data-x="?" data-y="?"' },
+		{ tag: 'h3',    img: imgQuestion, name: 'Bloc ?',        desc: 'Frappe dessous = pièce !',                       attrs: 'data-x="?" data-y="?"' },
+		{ tag: 'a',     img: imgTuyau,    name: 'Tuyau',         desc: '↓ sur un tuyau lié = téléportation !',           attrs: 'id="?" data-x="?" data-y="?" href="#?"' },
+		{ tag: 'hr',    img: imgSpike,    name: 'Pic',           desc: 'Toucher = dégâts ! (pic de fer)',                attrs: 'data-x="?" data-y="?"' },
+		{ tag: 'h5',    img: imgCloud,    name: 'Nuage',         desc: 'Plateforme traversable',                         attrs: 'data-x="?" data-y="?"' },
+		{ tag: 'h6',    img: imgDrapeau,  name: 'Drapeau',       desc: 'Objectif de fin de niveau',                     attrs: 'data-x="?" data-y="?"' },
+		{ tag: 'p',     img: imgPiece,    name: 'Pièce',         desc: 'À collecter (+50 pts)',                          attrs: 'data-x="?" data-y="?"' },
+		{ tag: 'input', img: imgGoomba,   name: 'Ennemi Goomba', desc: 'name="goomba" · saute dessus pour vaincre',      attrs: 'name="goomba" data-x="?" data-y="?"' },
+		{ tag: 'input', img: imgMario,    name: 'Spawn Mario',   desc: 'name="mario" · point de départ unique du joueur', attrs: 'name="mario" data-x="?" data-y="?"' },
 	];
 	/** @type {HTMLDivElement} */
 	let containerEl;
@@ -130,7 +87,7 @@
 						<div class="legend-grid">
 							{#each TAGS as t}
 								<div class="legend-card">
-									<span class="l-icon">{t.icon}</span>
+									<img class="l-icon" src={t.img} alt={t.name} />
 									<div class="l-body">
 										<div class="l-tag">&lt;{t.tag} {t.attrs}&gt;&lt;/{t.tag}&gt;</div>
 										<div class="l-name">{t.name} — {t.desc}</div>
@@ -150,6 +107,18 @@
 								<span>y="1" = haut &nbsp;·&nbsp; y="15" = bas (sol)</span>
 							</div>
 						</div>
+						<div class="legend-coords">
+							<div class="coord-grid-label">Balise &lt;input&gt; — attribut name</div>
+							<div class="coord-row">
+								<span>👾 &nbsp;<code style="color:#79c0ff">name="goomba"</code> &nbsp;→ ennemi qui marche (saute dessus pour le vaincre)</span>
+							</div>
+							<div class="coord-row">
+								<span>🍄 &nbsp;<code style="color:#79c0ff">name="mario"</code> &nbsp;→ point de départ de Mario dans le niveau</span>
+							</div>
+							<div class="coord-row">
+								<span class="coord-dim">Un seul spawn par niveau. Sans name="mario", Mario part au-dessus du 1er bloc de sol.</span>
+							</div>
+						</div>
 					</div>
 				{/if}
 				<div class="editor-wrap" class:hidden={legendOpen}>
@@ -166,7 +135,8 @@
 				<span class="tag"><code>&lt;h5&gt;</code> Nuage</span>
 				<span class="tag"><code>&lt;h6&gt;</code> Drapeau</span>
 				<span class="tag"><code>&lt;p&gt;</code> Pièce</span>
-				<span class="tag"><code>&lt;input&gt;</code> Ennemi</span>
+				<span class="tag"><code>&lt;input name="goomba"&gt;</code> Ennemi</span>
+				<span class="tag"><code>&lt;input name="mario"&gt;</code> Spawn</span>
 			</div>
 		</div>
 
@@ -383,8 +353,11 @@
 	}
 
 	.l-icon {
-		font-size: 1.6em;
+		width: 36px;
+		height: 36px;
+		object-fit: contain;
 		flex-shrink: 0;
+		image-rendering: pixelated;
 	}
 
 	.l-body {

@@ -120,7 +120,7 @@
 			<hr data-x="20" data-y="8" />
 
 			<!-- ═══════ ENNEMIS (saute dessus pour les vaincre) ═══════ -->
-			<input class="red" data-x="22" data-y="14" />
+			<input name="goomba" class="red" data-x="22" data-y="14" />
 
 			<!-- ═══════ DRAPEAU (objectif final) ═══════ -->
 			<h6 class="red" data-x="25" data-y="11"></h6>
@@ -134,7 +134,7 @@
 			<div class="guide-title">📖 GUIDE DES BALISES HTML</div>
 			<div class="guide-grid">
 				<div class="g-card">
-					<div class="g-icon">🟫</div>
+					<img class="g-icon" src="assets/sol.png" alt="Sol" />
 					<div>
 						<div class="g-tag">&lt;h1 data-x="?" data-y="?"&gt;</div>
 						<div class="g-name">Bloc de SOL — plateforme solide</div>
@@ -142,7 +142,7 @@
 					</div>
 				</div>
 				<div class="g-card">
-					<div class="g-icon">🧱</div>
+					<img class="g-icon" src="assets/brique.png" alt="Brique" />
 					<div>
 						<div class="g-tag">&lt;h2 data-x="?" data-y="?"&gt;</div>
 						<div class="g-name">BRIQUE — plateforme en briques</div>
@@ -150,7 +150,7 @@
 					</div>
 				</div>
 				<div class="g-card">
-					<div class="g-icon">❓</div>
+					<img class="g-icon" src="assets/question.png" alt="Bloc ?" />
 					<div>
 						<div class="g-tag">&lt;h3 data-x="?" data-y="?"&gt;</div>
 						<div class="g-name">BLOC ? — frappe dessous = pièce !</div>
@@ -158,7 +158,7 @@
 					</div>
 				</div>
 				<div class="g-card">
-					<div class="g-icon">🟢</div>
+					<img class="g-icon" src="assets/tuyau.png" alt="Tuyau" />
 					<div>
 						<div class="g-tag">&lt;a id="?" data-x="?" data-y="?" href="#?"&gt;</div>
 						<div class="g-name">TUYAU — obstacle vert · ↓ pour téléporter</div>
@@ -166,7 +166,7 @@
 					</div>
 				</div>
 				<div class="g-card">
-					<div class="g-icon">🔺</div>
+					<img class="g-icon" src="assets/spike.png" alt="Pic" />
 					<div>
 						<div class="g-tag">&lt;hr data-x="?" data-y="?"&gt;</div>
 						<div class="g-name">PIC — toucher = dégâts !</div>
@@ -174,7 +174,7 @@
 					</div>
 				</div>
 				<div class="g-card">
-					<div class="g-icon">☁️</div>
+					<img class="g-icon" src="assets/cloud.png" alt="Nuage" />
 					<div>
 						<div class="g-tag">&lt;h5 data-x="?" data-y="?"&gt;</div>
 						<div class="g-name">NUAGE — plateforme traversable</div>
@@ -182,7 +182,7 @@
 					</div>
 				</div>
 				<div class="g-card">
-					<div class="g-icon">🚩</div>
+					<img class="g-icon" src="assets/drapeau.png" alt="Drapeau" />
 					<div>
 						<div class="g-tag">&lt;h6 data-x="?" data-y="?"&gt;</div>
 						<div class="g-name">DRAPEAU — objectif de fin !</div>
@@ -190,7 +190,7 @@
 					</div>
 				</div>
 				<div class="g-card">
-					<div class="g-icon">🪙</div>
+					<img class="g-icon" src="assets/piece.png" alt="Pièce" />
 					<div>
 						<div class="g-tag">&lt;p data-x="?" data-y="?"&gt;</div>
 						<div class="g-name">PIÈCE — à collecter (+50 pts)</div>
@@ -198,11 +198,19 @@
 					</div>
 				</div>
 				<div class="g-card">
-					<div class="g-icon">👾</div>
+					<img class="g-icon" src="assets/goomba.png" alt="Goomba" />
 					<div>
-						<div class="g-tag">&lt;input data-x="?" data-y="?"&gt;</div>
-						<div class="g-name">ENNEMI — saute dessus pour gagner</div>
-						<div class="g-pos">x: 1-25 · y: 1-14</div>
+						<div class="g-tag">&lt;input name="goomba" data-x="?" data-y="?"&gt;</div>
+						<div class="g-name">ENNEMI Goomba — saute dessus pour vaincre</div>
+						<div class="g-pos">x: 1-25 · y: 1-14 · name="goomba" = ennemi</div>
+					</div>
+				</div>
+				<div class="g-card">
+					<img class="g-icon" src="assets/mario.png" alt="Mario" />
+					<div>
+						<div class="g-tag">&lt;input name="mario" data-x="?" data-y="?"&gt;</div>
+						<div class="g-name">SPAWN Mario — point de départ du joueur</div>
+						<div class="g-pos">x: 1-25 · y: 1-15 · name="mario" = spawn</div>
 					</div>
 				</div>
 				<div class="g-card">
@@ -217,7 +225,11 @@
 			<div class="ctrl-hint">
 				⌨️ Clavier : ← → pour bouger · ↑ ou ESPACE pour sauter · ↓ sur un tuyau lié pour téléporter
 				· ENTRÉE pour recommencer<br />
-				📱 Mobile : utilise les boutons ◀ ▲ ▶ ci-dessus
+				📱 Mobile : utilise les boutons ◀ ▲ ▶ ci-dessus<br /><br />
+				🎮 Balise <strong>&lt;input&gt;</strong> — l'attribut <strong>name</strong> détermine le type :<br />
+				&nbsp;&nbsp;👾 <code>name="goomba"</code> → ennemi qui marche (saute dessus pour le vaincre)<br />
+				&nbsp;&nbsp;🍄 <code>name="mario"</code> → point de départ de Mario (1 seul par niveau)<br />
+				&nbsp;&nbsp;Sans <code>name="mario"</code>, Mario apparaît au-dessus du 1er bloc de sol.
 			</div>
 		</div>
 

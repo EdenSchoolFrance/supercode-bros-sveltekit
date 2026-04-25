@@ -153,6 +153,7 @@ function parseLevel() {
 	enemies = [];
 	goalCell = null;
 	pipes = [];
+	let marioSpawn = null;
 
 	document
 		.querySelectorAll(
@@ -203,21 +204,30 @@ function parseLevel() {
 					coins.push({ gx, gy, collected: false, colorClass });
 					break;
 				case 'input':
-					enemies.push(makeEnemy(gx, gy, colorClass));
+					if (el.name === 'mario') {
+						marioSpawn = { gx, gy };
+					} else {
+						enemies.push(makeEnemy(gx, gy, colorClass));
+					}
 					break;
 			}
 		});
 
-	// Player spawn: above leftmost ground/brick tile
-	const bases = blockList
-		.filter((b) => b.type === 'ground' || b.type === 'brick')
-		.sort((a, b) => (a.gx !== b.gx ? a.gx - b.gx : a.gy - b.gy));
-
-	let sx = TILE,
+	// Player spawn
+	let sx, sy;
+	if (marioSpawn) {
+		sx = marioSpawn.gx * TILE + (TILE - PLAYER_W) / 2;
+		sy = marioSpawn.gy * TILE - PLAYER_H;
+	} else {
+		const bases = blockList
+			.filter((b) => b.type === 'ground' || b.type === 'brick')
+			.sort((a, b) => (a.gx !== b.gx ? a.gx - b.gx : a.gy - b.gy));
+		sx = TILE;
 		sy = GH - TILE * 3;
-	if (bases.length > 0) {
-		sx = bases[0].gx * TILE + (TILE - PLAYER_W) / 2;
-		sy = bases[0].gy * TILE - PLAYER_H;
+		if (bases.length > 0) {
+			sx = bases[0].gx * TILE + (TILE - PLAYER_W) / 2;
+			sy = bases[0].gy * TILE - PLAYER_H;
+		}
 	}
 	player = makePlayer(sx, sy);
 }

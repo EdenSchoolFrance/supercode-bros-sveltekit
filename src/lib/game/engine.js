@@ -111,6 +111,7 @@ export class GameEngine {
 		this._enemies = [];
 		this._goalCell = null;
 		this._pipes = [];
+		let marioSpawn = null;
 
 		const parser = new DOMParser();
 		const doc = parser.parseFromString(`<div>${htmlString}</div>`, 'text/html');
@@ -145,18 +146,30 @@ export class GameEngine {
 				case 'hr': this._addTile(gx, gy, 'spike', colorClass); break;
 				case 'h6': this._goalCell = { gx, gy, colorClass }; break;
 				case 'p': this._coins.push({ gx, gy, collected: false, colorClass }); break;
-				case 'input': this._enemies.push(this._makeEnemy(gx, gy, colorClass)); break;
+				case 'input':
+					if (el.getAttribute('name') === 'mario') {
+						marioSpawn = { gx, gy };
+					} else {
+						this._enemies.push(this._makeEnemy(gx, gy, colorClass));
+					}
+					break;
 			}
 		});
 
-		const bases = this._blockList
-			.filter((b) => b.type === 'ground' || b.type === 'brick')
-			.sort((a, b) => (a.gx !== b.gx ? a.gx - b.gx : a.gy - b.gy));
-
-		let sx = TILE, sy = GH - TILE * 3;
-		if (bases.length > 0) {
-			sx = bases[0].gx * TILE + (TILE - PLAYER_W) / 2;
-			sy = bases[0].gy * TILE - PLAYER_H;
+		let sx, sy;
+		if (marioSpawn) {
+			sx = marioSpawn.gx * TILE + (TILE - PLAYER_W) / 2;
+			sy = marioSpawn.gy * TILE - PLAYER_H;
+		} else {
+			const bases = this._blockList
+				.filter((b) => b.type === 'ground' || b.type === 'brick')
+				.sort((a, b) => (a.gx !== b.gx ? a.gx - b.gx : a.gy - b.gy));
+			sx = TILE;
+			sy = GH - TILE * 3;
+			if (bases.length > 0) {
+				sx = bases[0].gx * TILE + (TILE - PLAYER_W) / 2;
+				sy = bases[0].gy * TILE - PLAYER_H;
+			}
 		}
 		this._player = this._makePlayer(sx, sy);
 	}
