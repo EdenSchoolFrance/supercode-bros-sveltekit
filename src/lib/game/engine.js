@@ -2,30 +2,41 @@
 "use strict";
 
 import {
-	TILE, COLS, ROWS, GW, GH,
-	GRAVITY, JUMP_FORCE, MOVE_SPD, MAX_FALL,
-	PLAYER_W, PLAYER_H, ENEMY_W, ENEMY_H, ENEMY_SPD
-} from './constants.js';
+	TILE,
+	COLS,
+	ROWS,
+	GW,
+	GH,
+	GRAVITY,
+	JUMP_FORCE,
+	MOVE_SPD,
+	MAX_FALL,
+	PLAYER_W,
+	PLAYER_H,
+	ENEMY_W,
+	ENEMY_H,
+	ENEMY_SPD
+} from "./constants.js";
 
 const COLOR_FILTERS = {
-	red:   'sepia(1) saturate(6) hue-rotate(322deg)',
-	green: 'sepia(1) saturate(6) hue-rotate(80deg)',
-	blue:  'sepia(1) saturate(6) hue-rotate(200deg)',
+	red: "sepia(1) saturate(6) hue-rotate(322deg)",
+	green: "sepia(1) saturate(6) hue-rotate(80deg)",
+	blue: "sepia(1) saturate(6) hue-rotate(200deg)"
 };
 
 function getColorClass(el) {
-	const classes = (el.className || '').split(' ');
-	for (const c of ['red', 'green', 'blue']) if (classes.includes(c)) return c;
+	const classes = (el.className || "").split(" ");
+	for (const c of ["red", "green", "blue"]) if (classes.includes(c)) return c;
 	return null;
 }
 
 export class GameEngine {
 	constructor(canvas, onStateChange) {
 		this._canvas = canvas;
-		this._ctx = canvas.getContext('2d');
+		this._ctx = canvas.getContext("2d");
 		this._onStateChange = onStateChange || (() => {});
 
-		this._gameState = 'menu';
+		this._gameState = "menu";
 		this._frame = 0;
 		this._raf = null;
 
@@ -42,23 +53,24 @@ export class GameEngine {
 		this._score = 0;
 
 		this._K = { left: false, right: false, jump: false, down: false, downPress: false };
-		this._jumpBuffer = 0;  // frames remaining to honour a queued jump
-		this._coyoteTime = 0;  // frames remaining after leaving ground
+		this._jumpBuffer = 0; // frames remaining to honour a queued jump
+		this._coyoteTime = 0; // frames remaining after leaving ground
 
 		this._pipes = [];
+		this._fireballs = [];
 
 		this._showGrid = false;
 		this._hoveredCell = null;
 
 		this._boundKeyDown = this._onKeyDown.bind(this);
 		this._boundKeyUp = this._onKeyUp.bind(this);
-		document.addEventListener('keydown', this._boundKeyDown);
-		document.addEventListener('keyup', this._boundKeyUp);
+		document.addEventListener("keydown", this._boundKeyDown);
+		document.addEventListener("keyup", this._boundKeyUp);
 	}
 
 	destroy() {
-		document.removeEventListener('keydown', this._boundKeyDown);
-		document.removeEventListener('keyup', this._boundKeyUp);
+		document.removeEventListener("keydown", this._boundKeyDown);
+		document.removeEventListener("keyup", this._boundKeyUp);
 		if (this._raf) cancelAnimationFrame(this._raf);
 		this._raf = null;
 	}
@@ -67,39 +79,49 @@ export class GameEngine {
 
 	_onKeyDown(e) {
 		const tag = e.target?.tagName?.toLowerCase();
-		if (tag === 'input' || tag === 'textarea' || e.target?.isContentEditable) return;
+		if (tag === "input" || tag === "textarea" || e.target?.isContentEditable) return;
 
-		const gameKey = ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' ','a','d','w','s'].includes(e.key);
-		if (gameKey && this._gameState === 'playing') e.preventDefault();
+		const gameKey = [
+			"ArrowLeft",
+			"ArrowRight",
+			"ArrowUp",
+			"ArrowDown",
+			" ",
+			"a",
+			"d",
+			"w",
+			"s"
+		].includes(e.key);
+		if (gameKey && this._gameState === "playing") e.preventDefault();
 
-		if (e.key === 'ArrowLeft'  || e.key === 'a') this._K.left = true;
-		if (e.key === 'ArrowRight' || e.key === 'd') this._K.right = true;
-		if (e.key === 'ArrowUp' || e.key === 'w' || e.key === ' ') {
+		if (e.key === "ArrowLeft" || e.key === "a") this._K.left = true;
+		if (e.key === "ArrowRight" || e.key === "d") this._K.right = true;
+		if (e.key === "ArrowUp" || e.key === "w" || e.key === " ") {
 			if (!this._K.jump) this._jumpBuffer = 8; // queue jump for up to 8 frames
 			this._K.jump = true;
 		}
-		if (e.key === 'ArrowDown' || e.key === 's') {
+		if (e.key === "ArrowDown" || e.key === "s") {
 			if (!this._K.down) this._K.downPress = true;
 			this._K.down = true;
 		}
-		if (e.key === 'Enter' && this._gameState !== 'playing') {
-			this._onStateChange({ action: 'play-requested' });
+		if (e.key === "Enter" && this._gameState !== "playing") {
+			this._onStateChange({ action: "play-requested" });
 		}
 	}
 
 	_onKeyUp(e) {
 		const tag = e.target?.tagName?.toLowerCase();
-		if (tag === 'input' || tag === 'textarea' || e.target?.isContentEditable) return;
+		if (tag === "input" || tag === "textarea" || e.target?.isContentEditable) return;
 
-		if (e.key === 'ArrowLeft'  || e.key === 'a') this._K.left = false;
-		if (e.key === 'ArrowRight' || e.key === 'd') this._K.right = false;
-		if (e.key === 'ArrowUp' || e.key === 'w' || e.key === ' ') this._K.jump = false;
-		if (e.key === 'ArrowDown' || e.key === 's') this._K.down = false;
+		if (e.key === "ArrowLeft" || e.key === "a") this._K.left = false;
+		if (e.key === "ArrowRight" || e.key === "d") this._K.right = false;
+		if (e.key === "ArrowUp" || e.key === "w" || e.key === " ") this._K.jump = false;
+		if (e.key === "ArrowDown" || e.key === "s") this._K.down = false;
 	}
 
 	pressKey(key, pressed) {
 		this._K[key] = pressed;
-		if (key === 'jump' && pressed) this._jumpBuffer = 8;
+		if (key === "jump" && pressed) this._jumpBuffer = 8;
 	}
 
 	// ── Level parsing ──────────────────────────────────────────────────────
@@ -111,14 +133,15 @@ export class GameEngine {
 		this._enemies = [];
 		this._goalCell = null;
 		this._pipes = [];
+		this._fireballs = [];
 		let marioSpawn = null;
 
 		const parser = new DOMParser();
-		const doc = parser.parseFromString(`<div>${htmlString}</div>`, 'text/html');
+		const doc = parser.parseFromString(`<div>${htmlString}</div>`, "text/html");
 
-		doc.querySelectorAll('h1,h2,h3,a,h5,h6,hr,p,input,button').forEach((el) => {
+		doc.querySelectorAll("h1,h2,h3,a,h5,h6,hr,p,input,button").forEach((el) => {
 			const tag = el.tagName.toLowerCase();
-			if (tag === 'button') return;
+			if (tag === "button") return;
 
 			const rawX = parseInt(el.dataset.x);
 			const rawY = parseInt(el.dataset.y);
@@ -129,30 +152,50 @@ export class GameEngine {
 
 			const colorClass = getColorClass(el);
 			switch (tag) {
-				case 'h1': this._addTile(gx, gy, 'ground', colorClass); break;
-				case 'h2': this._addTile(gx, gy, 'brick', colorClass); break;
-				case 'h3': this._addTile(gx, gy, 'question', colorClass); break;
-				case 'a': {
+				case "h1":
+					this._addTile(gx, gy, "ground", colorClass);
+					break;
+				case "h2":
+					this._addTile(gx, gy, "brick", colorClass);
+					break;
+				case "h3":
+					this._addTile(gx, gy, "question", colorClass);
+					break;
+				case "a": {
 					const pipeGy = Math.min(gy, ROWS - 2);
-					this._addTile(gx, pipeGy, 'pipe_top', colorClass);
-					this._addTile(gx, Math.min(gy + 1, ROWS - 1), 'pipe_body', colorClass);
+					this._addTile(gx, pipeGy, "pipe_top", colorClass);
+					this._addTile(gx, Math.min(gy + 1, ROWS - 1), "pipe_body", colorClass);
 					const pipeId = el.id || null;
-					const hrefAttr = el.getAttribute('href');
-					const linkedTo = hrefAttr ? hrefAttr.replace(/^#/, '') : null;
+					const hrefAttr = el.getAttribute("href");
+					const linkedTo = hrefAttr ? hrefAttr.replace(/^#/, "") : null;
 					this._pipes.push({ id: pipeId, linkedTo, gx, gy: pipeGy });
 					break;
 				}
-				case 'h5': this._addTile(gx, gy, 'cloud', colorClass); break;
-				case 'hr': this._addTile(gx, gy, 'spike', colorClass); break;
-				case 'h6': this._goalCell = { gx, gy, colorClass }; break;
-				case 'p': this._coins.push({ gx, gy, collected: false, colorClass }); break;
-				case 'input':
-					if (el.getAttribute('name') === 'mario') {
+				case "h5":
+					this._addTile(gx, gy, "cloud", colorClass);
+					break;
+				case "hr":
+					this._addTile(gx, gy, "spike", colorClass);
+					break;
+				case "h6":
+					this._goalCell = { gx, gy, colorClass };
+					break;
+				case "p":
+					this._coins.push({ gx, gy, collected: false, colorClass });
+					break;
+				case "input": {
+					const name = el.getAttribute("name");
+					const type = el.getAttribute("type");
+					if (name === "mario") {
 						marioSpawn = { gx, gy };
+					} else if (type === "boss" || name === "bowser") {
+						this._enemies.push(this._makeBowser(gx, gy, colorClass));
 					} else {
-						this._enemies.push(this._makeEnemy(gx, gy, colorClass));
+						const enemyType = name === "koopa" ? "koopa" : "goomba";
+						this._enemies.push(this._makeEnemy(gx, gy, colorClass, enemyType));
 					}
 					break;
+				}
 			}
 		});
 
@@ -162,7 +205,7 @@ export class GameEngine {
 			sy = marioSpawn.gy * TILE - PLAYER_H;
 		} else {
 			const bases = this._blockList
-				.filter((b) => b.type === 'ground' || b.type === 'brick')
+				.filter((b) => b.type === "ground" || b.type === "brick")
 				.sort((a, b) => (a.gx !== b.gx ? a.gx - b.gx : a.gy - b.gy));
 			sx = TILE;
 			sy = GH - TILE * 3;
@@ -190,32 +233,71 @@ export class GameEngine {
 		const footTileY = Math.floor((p.y + p.h + 1) / TILE);
 		const centerTileX = Math.floor((p.x + p.w / 2) / TILE);
 		const tile = this._getTile(centerTileX, footTileY);
-		if (!tile || tile.type !== 'pipe_top') return null;
-		return this._pipes.find(pipe => pipe.gx === centerTileX && pipe.gy === footTileY) || null;
+		if (!tile || tile.type !== "pipe_top") return null;
+		return this._pipes.find((pipe) => pipe.gx === centerTileX && pipe.gy === footTileY) || null;
 	}
 
 	// ── Game objects ───────────────────────────────────────────────────────
 
 	_makePlayer(x, y) {
-		return { x, y, vx: 0, vy: 0, w: PLAYER_W, h: PLAYER_H, onGround: false, dir: 1, walkTick: 0, invincible: 0, coyote: 0,
-			pipeState: null, pipeTick: 0, pipeClipY: 0, pipeLinkedTo: null };
+		return {
+			x,
+			y,
+			vx: 0,
+			vy: 0,
+			w: PLAYER_W,
+			h: PLAYER_H,
+			onGround: false,
+			dir: 1,
+			walkTick: 0,
+			invincible: 0,
+			coyote: 0,
+			pipeState: null,
+			pipeTick: 0,
+			pipeClipY: 0,
+			pipeLinkedTo: null
+		};
 	}
 
-	_makeEnemy(gx, gy, colorClass = null) {
+	_makeBowser(gx, gy, colorClass = null) {
+		return {
+			x: gx * TILE + (TILE - 48) / 2,
+			y: gy * TILE + (TILE - 48),
+			w: 48,
+			h: 48,
+			vx: -(ENEMY_SPD * 0.5),
+			vy: 0,
+			onGround: false,
+			alive: true,
+			squishTimer: 0,
+			colorClass,
+			enemyType: "bowser",
+			hp: 3,
+			hitFlash: 0,
+			fireTimer: 0
+		};
+	}
+
+	_makeEnemy(gx, gy, colorClass = null, enemyType = "goomba") {
 		return {
 			x: gx * TILE + (TILE - ENEMY_W) / 2,
 			y: gy * TILE + (TILE - ENEMY_H),
-			w: ENEMY_W, h: ENEMY_H,
-			vx: -ENEMY_SPD, vy: 0,
-			onGround: false, alive: true, squishTimer: 0,
-			colorClass
+			w: ENEMY_W,
+			h: ENEMY_H,
+			vx: -ENEMY_SPD,
+			vy: 0,
+			onGround: false,
+			alive: true,
+			squishTimer: 0,
+			colorClass,
+			enemyType
 		};
 	}
 
 	// ── Physics ────────────────────────────────────────────────────────────
 
 	_isSolid(type) {
-		return type !== 'cloud';
+		return type !== "cloud";
 	}
 
 	_moveY(ent, allowOneWay) {
@@ -238,10 +320,14 @@ export class GameEngine {
 					ent.onGround = true;
 					break;
 				}
-				if (allowOneWay && b.type === 'cloud' && prevBottom <= tileTop + 1) {
+				if (allowOneWay && b.type === "cloud" && prevBottom <= tileTop + 1) {
 					ent.y = tileTop - ent.h;
 					ent.vy = 0;
 					ent.onGround = true;
+					if (ent === this._player && !b.destroying) {
+						b.destroying = true;
+						b.destroyTimer = 60;
+					}
 					break;
 				}
 			}
@@ -251,12 +337,12 @@ export class GameEngine {
 				const b = this._getTile(tx, tyHead);
 				if (b && this._isSolid(b.type)) {
 					ent.y = (tyHead + 1) * TILE;
-					if (b.type === 'question' && !b.used && ent === this._player) {
+					if (b.type === "question" && !b.used && ent === this._player) {
 						b.used = true;
 						this._score += 50;
 						this._coinCount++;
 						this._notifyState();
-						this._addParticle(b.gx * TILE + TILE / 2, b.gy * TILE - 4, '+50 🪙', '#f8b800');
+						this._addParticle(b.gx * TILE + TILE / 2, b.gy * TILE - 4, "+50 🪙", "#f8b800");
 					}
 					ent.vy = 0;
 					break;
@@ -317,9 +403,10 @@ export class GameEngine {
 		this._coinCount = 0;
 		this._score = 0;
 		this._particles = [];
+		this._fireballs = [];
 		this._frame = 0;
 		this._jumpBuffer = 0;
-		this._gameState = 'playing';
+		this._gameState = "playing";
 		this._notifyState();
 		if (this._raf) cancelAnimationFrame(this._raf);
 		this._raf = requestAnimationFrame(this._loop.bind(this));
@@ -328,7 +415,7 @@ export class GameEngine {
 	stop() {
 		if (this._raf) cancelAnimationFrame(this._raf);
 		this._raf = null;
-		this._gameState = 'menu';
+		this._gameState = "menu";
 		this._notifyState();
 	}
 
@@ -338,16 +425,16 @@ export class GameEngine {
 
 	setGrid(show) {
 		this._showGrid = show;
-		if (this._gameState !== 'playing') this._render();
+		if (this._gameState !== "playing") this._render();
 	}
 
 	setHoveredCell(col, row) {
 		this._hoveredCell = col !== null ? { col, row } : null;
-		if (this._gameState !== 'playing') this._render();
+		if (this._gameState !== "playing") this._render();
 	}
 
 	_loop() {
-		if (this._gameState !== 'playing') return;
+		if (this._gameState !== "playing") return;
 		this._frame++;
 		this._update();
 		this._render();
@@ -358,15 +445,15 @@ export class GameEngine {
 		const p = this._player;
 
 		// ── Pipe animation (freeze normal physics) ──────────────────────────
-		if (p.pipeState === 'entering') {
+		if (p.pipeState === "entering") {
 			p.pipeTick++;
 			if (p.pipeTick >= 30) {
-				const dest = this._pipes.find(pipe => pipe.id === p.pipeLinkedTo);
+				const dest = this._pipes.find((pipe) => pipe.id === p.pipeLinkedTo);
 				if (dest) {
 					p.x = dest.gx * TILE + (TILE - p.w) / 2;
 					p.y = dest.gy * TILE;
 					p.pipeClipY = dest.gy * TILE;
-					p.pipeState = 'exiting';
+					p.pipeState = "exiting";
 					p.pipeTick = 0;
 				} else {
 					p.pipeState = null;
@@ -375,7 +462,7 @@ export class GameEngine {
 			this._updateParticles();
 			return;
 		}
-		if (p.pipeState === 'exiting') {
+		if (p.pipeState === "exiting") {
 			p.pipeTick++;
 			if (p.pipeTick >= 30) {
 				p.y = p.pipeClipY - p.h;
@@ -388,9 +475,15 @@ export class GameEngine {
 			return;
 		}
 
-		if (this._K.left) { p.vx = -MOVE_SPD; p.dir = -1; }
-		else if (this._K.right) { p.vx = MOVE_SPD; p.dir = 1; }
-		else { p.vx *= 0.78; }
+		if (this._K.left) {
+			p.vx = -MOVE_SPD;
+			p.dir = -1;
+		} else if (this._K.right) {
+			p.vx = MOVE_SPD;
+			p.dir = 1;
+		} else {
+			p.vx *= 0.78;
+		}
 
 		// Coyote time: keep the window alive while on ground, count down after leaving
 		if (p.onGround) {
@@ -429,13 +522,13 @@ export class GameEngine {
 			const txR = Math.floor((p.x + p.w - 1) / TILE);
 			for (let tx = txL; tx <= txR; tx++) {
 				const b = this._getTile(tx, footTileY);
-				if (b && b.type === 'spike') {
+				if (b && b.type === "spike") {
 					this._lives--;
 					p.invincible = 80;
 					p.vy = -9;
 					this._notifyState();
 					if (this._lives <= 0) {
-						this._gameState = 'dead';
+						this._gameState = "dead";
 						setTimeout(() => this._notifyState(), 700);
 					}
 					break;
@@ -449,7 +542,7 @@ export class GameEngine {
 			if (p.onGround) {
 				const pipe = this._getPipeUnderPlayer();
 				if (pipe && pipe.linkedTo) {
-					p.pipeState = 'entering';
+					p.pipeState = "entering";
 					p.pipeTick = 0;
 					p.pipeClipY = pipe.gy * TILE;
 					p.pipeLinkedTo = pipe.linkedTo;
@@ -467,9 +560,7 @@ export class GameEngine {
 			}
 
 			if (e.onGround) {
-				const aTx = e.vx > 0
-					? Math.floor((e.x + e.w + 2) / TILE)
-					: Math.floor((e.x - 2) / TILE);
+				const aTx = e.vx > 0 ? Math.floor((e.x + e.w + 2) / TILE) : Math.floor((e.x - 2) / TILE);
 				const footTy = Math.floor((e.y + e.h + 4) / TILE);
 				if (!this._getTile(aTx, footTy)) e.vx *= -1;
 			}
@@ -480,18 +571,54 @@ export class GameEngine {
 			this._moveX(e);
 
 			if (Math.abs(e.vx) < 0.05 && Math.abs(prevVx) > 0.1) {
-				e.vx = prevVx > 0 ? -ENEMY_SPD : ENEMY_SPD;
+				const spd = e.enemyType === "bowser" ? ENEMY_SPD * 0.5 : ENEMY_SPD;
+				e.vx = prevVx > 0 ? -spd : spd;
 			}
-			if (e.y > GH + 60) { e.alive = false; continue; }
+			if (e.y > GH + 60) {
+				e.alive = false;
+				continue;
+			}
+
+			// Bowser: hit flash + fireball timer
+			if (e.enemyType === "bowser") {
+				if (e.hitFlash > 0) e.hitFlash--;
+				if (e.alive && e.onGround) {
+					e.fireTimer++;
+					if (e.fireTimer >= 180) {
+						e.fireTimer = 0;
+						this._spawnFireball(e);
+					}
+				}
+			}
 
 			if (p.invincible === 0 && this._overlap(p, e)) {
 				if (p.vy > 0 && p.y + p.h < e.y + e.h * 0.55) {
-					e.alive = false;
-					e.squishTimer = 28;
-					p.vy = -9;
-					this._score += 200;
-					this._notifyState();
-					this._addParticle(e.x + e.w / 2, e.y, '+200 ⭐', '#44ff88');
+					if (e.enemyType === "bowser") {
+						if (e.hitFlash === 0) {
+							e.hp--;
+							e.hitFlash = 60;
+							p.vy = -9;
+							const cx = e.x + e.w / 2;
+							if (e.hp <= 0) {
+								e.alive = false;
+								e.squishTimer = 90;
+								this._score += 1000;
+								this._notifyState();
+								this._addParticle(cx, e.y + 4, "+1000 ⭐", "#f8b800");
+							} else {
+								this._addParticle(cx, e.y + 4, "💥", "#ff4444");
+							}
+						} else {
+							p.vy = -9;
+						}
+					} else {
+						e.alive = false;
+						e.squishTimer = 28;
+						p.vy = -9;
+						this._score += 200;
+						this._notifyState();
+						this._addParticle(e.x + e.w / 2, e.y, "+200 ⭐", "#44ff88");
+					}
 				} else {
 					this._lives--;
 					p.invincible = 80;
@@ -499,12 +626,15 @@ export class GameEngine {
 					p.vy = -6;
 					this._notifyState();
 					if (this._lives <= 0) {
-						this._gameState = 'dead';
+						this._gameState = "dead";
 						setTimeout(() => this._notifyState(), 700);
 					}
 				}
 			}
 		}
+
+		// Fireballs
+		this._updateFireballs(p);
 
 		// Coins
 		for (const c of this._coins) {
@@ -515,7 +645,7 @@ export class GameEngine {
 				this._coinCount++;
 				this._score += 50;
 				this._notifyState();
-				this._addParticle(c.gx * TILE + TILE / 2, c.gy * TILE, '+50 🪙', '#f8b800');
+				this._addParticle(c.gx * TILE + TILE / 2, c.gy * TILE, "+50 🪙", "#f8b800");
 			}
 		}
 
@@ -524,11 +654,12 @@ export class GameEngine {
 			const flagZone = {
 				x: this._goalCell.gx * TILE - 2,
 				y: this._goalCell.gy * TILE - TILE * 2,
-				w: TILE + 4, h: TILE * 3
+				w: TILE + 4,
+				h: TILE * 3
 			};
 			if (this._overlap(p, flagZone)) {
 				this._score += 500;
-				this._gameState = 'win';
+				this._gameState = "win";
 				setTimeout(() => this._notifyState(), 700);
 			}
 		}
@@ -538,19 +669,43 @@ export class GameEngine {
 			this._lives--;
 			this._notifyState();
 			if (this._lives <= 0) {
-				this._gameState = 'dead';
+				this._gameState = "dead";
 				setTimeout(() => this._notifyState(), 400);
 			} else {
 				this._respawn();
 			}
 		}
 
+		this._updateClouds();
 		this._updateParticles();
+	}
+
+	_updateClouds() {
+		for (let i = this._blockList.length - 1; i >= 0; i--) {
+			const b = this._blockList[i];
+			if (b.type !== "cloud") continue;
+			if (b.destroying && !b.falling) {
+				b.destroyTimer--;
+				if (b.destroyTimer <= 0) {
+					b.falling = true;
+					b.fallVy = 0;
+					b.fallY = 0;
+					delete this._tileMap[`${b.gx},${b.gy}`];
+				}
+			}
+			if (b.falling) {
+				b.fallVy = Math.min((b.fallVy || 0) + GRAVITY, MAX_FALL);
+				b.fallY = (b.fallY || 0) + b.fallVy;
+				if (b.gy * TILE + b.fallY > GH + TILE) {
+					this._blockList.splice(i, 1);
+				}
+			}
+		}
 	}
 
 	_respawn() {
 		const bases = this._blockList
-			.filter((b) => b.type === 'ground' || b.type === 'brick')
+			.filter((b) => b.type === "ground" || b.type === "brick")
 			.sort((a, b) => a.gx - b.gx);
 		const p = this._player;
 		if (bases.length > 0) {
@@ -585,22 +740,24 @@ export class GameEngine {
 		const ctx = this._ctx;
 
 		const sky = ctx.createLinearGradient(0, 0, 0, GH);
-		sky.addColorStop(0, '#3b7de8');
-		sky.addColorStop(0.6, '#6aa0f8');
-		sky.addColorStop(1, '#90b8ff');
+		sky.addColorStop(0, "#3b7de8");
+		sky.addColorStop(0.6, "#6aa0f8");
+		sky.addColorStop(1, "#90b8ff");
 		ctx.fillStyle = sky;
 		ctx.fillRect(0, 0, GW, GH);
 
 		this._drawBgClouds();
 		for (const b of this._blockList) this._drawBlock(b);
-		if (this._goalCell) this._drawFlag(this._goalCell.gx, this._goalCell.gy, this._goalCell.colorClass);
+		if (this._goalCell)
+			this._drawFlag(this._goalCell.gx, this._goalCell.gy, this._goalCell.colorClass);
 		for (const c of this._coins) if (!c.collected) this._drawCoin(c.gx, c.gy, c.colorClass);
 		for (const e of this._enemies) this._drawEnemy(e);
+		for (const fb of this._fireballs) if (fb.alive) this._drawFireball(fb);
 		if (this._player) this._drawPlayer();
 
 		ctx.save();
 		ctx.font = 'bold 12px "Courier New"';
-		ctx.textAlign = 'center';
+		ctx.textAlign = "center";
 		for (const p of this._particles) {
 			ctx.globalAlpha = Math.max(0, p.alpha);
 			ctx.fillStyle = p.color;
@@ -617,11 +774,11 @@ export class GameEngine {
 		ctx.save();
 
 		if (this._hoveredCell) {
-			ctx.fillStyle = 'rgba(248,184,0,0.22)';
+			ctx.fillStyle = "rgba(248,184,0,0.22)";
 			ctx.fillRect(this._hoveredCell.col * TILE, this._hoveredCell.row * TILE, TILE, TILE);
 		}
 
-		ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+		ctx.strokeStyle = "rgba(0,0,0,0.55)";
 		ctx.lineWidth = 1;
 		for (let col = 0; col <= COLS; col++) {
 			ctx.beginPath();
@@ -642,8 +799,8 @@ export class GameEngine {
 			const label = `x:${cx + 1}  y:${cy + 1}`;
 
 			ctx.font = 'bold 10px "Courier New", monospace';
-			ctx.textAlign = 'left';
-			ctx.textBaseline = 'top';
+			ctx.textAlign = "left";
+			ctx.textBaseline = "top";
 			const tw = ctx.measureText(label).width + 12;
 			const th = 18;
 
@@ -652,13 +809,13 @@ export class GameEngine {
 			if (by < 0) by = cy * TILE + TILE + 5;
 			bx = Math.max(2, Math.min(GW - tw - 2, bx));
 
-			ctx.fillStyle = 'rgba(0,0,0,0.85)';
+			ctx.fillStyle = "rgba(0,0,0,0.85)";
 			ctx.fillRect(bx, by, tw, th);
-			ctx.strokeStyle = '#f8b800';
+			ctx.strokeStyle = "#f8b800";
 			ctx.lineWidth = 1.5;
 			ctx.strokeRect(bx, by, tw, th);
 
-			ctx.fillStyle = '#f8b800';
+			ctx.fillStyle = "#f8b800";
 			ctx.fillText(label, bx + 6, by + 4);
 		}
 
@@ -668,11 +825,13 @@ export class GameEngine {
 	_drawBgClouds() {
 		const ctx = this._ctx;
 		const BG_CLOUDS = [
-			{ x: 70, y: 55, s: 1.1 }, { x: 220, y: 38, s: 1.3 },
-			{ x: 400, y: 62, s: 0.9 }, { x: 580, y: 42, s: 1.15 },
+			{ x: 70, y: 55, s: 1.1 },
+			{ x: 220, y: 38, s: 1.3 },
+			{ x: 400, y: 62, s: 0.9 },
+			{ x: 580, y: 42, s: 1.15 },
 			{ x: 730, y: 68, s: 0.85 }
 		];
-		ctx.fillStyle = 'rgba(255,255,255,0.5)';
+		ctx.fillStyle = "rgba(255,255,255,0.5)";
 		for (const c of BG_CLOUDS) {
 			ctx.beginPath();
 			this._cloudArc(c.x, c.y, c.s);
@@ -697,79 +856,119 @@ export class GameEngine {
 		if (b.colorClass) ctx.filter = COLOR_FILTERS[b.colorClass];
 
 		switch (b.type) {
-			case 'ground':
-				ctx.fillStyle = '#bb3800'; ctx.fillRect(x, y, T, T);
-				ctx.fillStyle = '#e86800'; ctx.fillRect(x, y, T, 6);
-				ctx.fillStyle = '#881800'; ctx.fillRect(x, y + T - 5, T, 5);
-				ctx.fillStyle = '#992800';
+			case "ground":
+				ctx.fillStyle = "#bb3800";
+				ctx.fillRect(x, y, T, T);
+				ctx.fillStyle = "#e86800";
+				ctx.fillRect(x, y, T, 6);
+				ctx.fillStyle = "#881800";
+				ctx.fillRect(x, y + T - 5, T, 5);
+				ctx.fillStyle = "#992800";
 				ctx.fillRect(x + T / 2 - 1, y + 6, 2, T - 11);
 				ctx.fillRect(x + 1, y + T / 2 - 1, T - 2, 2);
 				break;
 
-			case 'brick':
-				ctx.fillStyle = '#c84008'; ctx.fillRect(x, y, T, T);
-				ctx.fillStyle = '#ffddaa';
-				ctx.fillRect(x, y + 10, T, 2); ctx.fillRect(x, y + 22, T, 2);
-				ctx.fillRect(x + 15, y, 2, 10); ctx.fillRect(x + 7, y + 12, 2, 10);
-				ctx.fillRect(x + 23, y + 12, 2, 10); ctx.fillRect(x + 15, y + 24, 2, 8);
+			case "brick":
+				ctx.fillStyle = "#c84008";
+				ctx.fillRect(x, y, T, T);
+				ctx.fillStyle = "#ffddaa";
+				ctx.fillRect(x, y + 10, T, 2);
+				ctx.fillRect(x, y + 22, T, 2);
+				ctx.fillRect(x + 15, y, 2, 10);
+				ctx.fillRect(x + 7, y + 12, 2, 10);
+				ctx.fillRect(x + 23, y + 12, 2, 10);
+				ctx.fillRect(x + 15, y + 24, 2, 8);
 				break;
 
-			case 'question':
+			case "question":
 				if (b.used) {
-					ctx.fillStyle = '#888'; ctx.fillRect(x, y, T, T);
-					ctx.fillStyle = '#666';
+					ctx.fillStyle = "#888";
+					ctx.fillRect(x, y, T, T);
+					ctx.fillStyle = "#666";
 					for (let i = 0; i < T; i += 8) ctx.fillRect(x + i, y, 4, T);
 				} else {
 					const bob = Math.sin(this._frame * 0.12) * 2;
-					ctx.fillStyle = '#f8b800'; ctx.fillRect(x, y - bob, T, T);
-					ctx.fillStyle = '#c87800';
-					ctx.fillRect(x, y - bob, T, 3); ctx.fillRect(x, y - bob + T - 3, T, 3);
-					ctx.fillRect(x, y - bob, 3, T); ctx.fillRect(x + T - 3, y - bob, 3, T);
-					ctx.fillStyle = '#ffe044'; ctx.fillRect(x + 3, y - bob + 3, T - 6, T - 6);
-					ctx.fillStyle = '#fff';
+					ctx.fillStyle = "#f8b800";
+					ctx.fillRect(x, y - bob, T, T);
+					ctx.fillStyle = "#c87800";
+					ctx.fillRect(x, y - bob, T, 3);
+					ctx.fillRect(x, y - bob + T - 3, T, 3);
+					ctx.fillRect(x, y - bob, 3, T);
+					ctx.fillRect(x + T - 3, y - bob, 3, T);
+					ctx.fillStyle = "#ffe044";
+					ctx.fillRect(x + 3, y - bob + 3, T - 6, T - 6);
+					ctx.fillStyle = "#fff";
 					ctx.font = 'bold 20px "Press Start 2P", monospace';
-					ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-					ctx.fillText('?', x + T / 2, y - bob + T / 2);
-					ctx.textBaseline = 'alphabetic';
+					ctx.textAlign = "center";
+					ctx.textBaseline = "middle";
+					ctx.fillText("?", x + T / 2, y - bob + T / 2);
+					ctx.textBaseline = "alphabetic";
 				}
 				break;
 
-			case 'pipe_top': {
-				const bw = T + 8, bx = x - 4;
-				ctx.fillStyle = '#00bb00'; ctx.fillRect(bx, y, bw, 14);
-				ctx.fillStyle = '#008800'; ctx.fillRect(bx, y + 14, bw, 4);
-				ctx.fillStyle = '#009900'; ctx.fillRect(x + 2, y + 18, T - 4, T - 18);
-				ctx.fillStyle = '#00ee00';
-				ctx.fillRect(bx + 3, y + 2, 6, 10); ctx.fillRect(x + 4, y + 20, 5, T - 22);
+			case "pipe_top": {
+				const bw = T + 8,
+					bx = x - 4;
+				ctx.fillStyle = "#00bb00";
+				ctx.fillRect(bx, y, bw, 14);
+				ctx.fillStyle = "#008800";
+				ctx.fillRect(bx, y + 14, bw, 4);
+				ctx.fillStyle = "#009900";
+				ctx.fillRect(x + 2, y + 18, T - 4, T - 18);
+				ctx.fillStyle = "#00ee00";
+				ctx.fillRect(bx + 3, y + 2, 6, 10);
+				ctx.fillRect(x + 4, y + 20, 5, T - 22);
 				break;
 			}
-			case 'pipe_body':
-				ctx.fillStyle = '#009900'; ctx.fillRect(x + 2, y, T - 4, T);
-				ctx.fillStyle = '#00ee00'; ctx.fillRect(x + 4, y, 5, T);
-				ctx.fillStyle = '#005500'; ctx.fillRect(x + T - 7, y, 5, T);
+			case "pipe_body":
+				ctx.fillStyle = "#009900";
+				ctx.fillRect(x + 2, y, T - 4, T);
+				ctx.fillStyle = "#00ee00";
+				ctx.fillRect(x + 4, y, 5, T);
+				ctx.fillStyle = "#005500";
+				ctx.fillRect(x + T - 7, y, 5, T);
 				break;
 
-			case 'cloud':
-				ctx.fillStyle = 'rgba(210,225,255,0.88)';
+			case "cloud": {
+				let ox = 0;
+				let oy = 0;
+				if (b.destroying && !b.falling) {
+					ox = Math.sin(this._frame * 1.2) * 2;
+					oy = Math.cos(this._frame * 1.4) * 1.5;
+				}
+				if (b.falling) {
+					oy = b.fallY || 0;
+					ctx.globalAlpha = Math.max(0, 1 - (b.fallY || 0) / GH);
+				}
+				ctx.fillStyle = "rgba(210,225,255,0.88)";
 				ctx.beginPath();
-				this._cloudArc(x - 2, y + 6, 0.68);
+				this._cloudArc(x - 2 + ox, y + 6 + oy, 0.68);
 				ctx.fill();
+				ctx.globalAlpha = 1;
 				break;
+			}
 
-			case 'spike': {
-				ctx.fillStyle = '#3c3c3c';
+			case "spike": {
+				ctx.fillStyle = "#3c3c3c";
 				ctx.fillRect(x, y + 14, T, T - 14);
-				ctx.fillStyle = '#555';
+				ctx.fillStyle = "#555";
 				ctx.fillRect(x, y + 14, T, 2);
 				for (let i = 0; i < 4; i++) {
 					const cx = x + i * 8 + 4;
-					ctx.fillStyle = '#d0d0d0'; ctx.fillRect(cx - 1, y,      2, 2);
-					ctx.fillStyle = '#909090'; ctx.fillRect(cx - 2, y +  2,  4, 4);
-					ctx.fillStyle = '#b8b8b8'; ctx.fillRect(cx - 2, y +  2,  1, 4);
-					ctx.fillStyle = '#585858'; ctx.fillRect(cx + 1, y +  2,  1, 4);
-					ctx.fillStyle = '#707070'; ctx.fillRect(cx - 3, y +  6,  6, 8);
-					ctx.fillStyle = '#888';    ctx.fillRect(cx - 3, y +  6,  1, 8);
-					ctx.fillStyle = '#484848'; ctx.fillRect(cx + 2, y +  6,  1, 8);
+					ctx.fillStyle = "#d0d0d0";
+					ctx.fillRect(cx - 1, y, 2, 2);
+					ctx.fillStyle = "#909090";
+					ctx.fillRect(cx - 2, y + 2, 4, 4);
+					ctx.fillStyle = "#b8b8b8";
+					ctx.fillRect(cx - 2, y + 2, 1, 4);
+					ctx.fillStyle = "#585858";
+					ctx.fillRect(cx + 1, y + 2, 1, 4);
+					ctx.fillStyle = "#707070";
+					ctx.fillRect(cx - 3, y + 6, 6, 8);
+					ctx.fillStyle = "#888";
+					ctx.fillRect(cx - 3, y + 6, 1, 8);
+					ctx.fillStyle = "#484848";
+					ctx.fillRect(cx + 2, y + 6, 1, 8);
 				}
 				break;
 			}
@@ -784,33 +983,55 @@ export class GameEngine {
 		const bob = Math.sin(this._frame * 0.1 + gx * 0.7) * 3;
 		const ox = gx * TILE + 8;
 		const oy = Math.round(gy * TILE + 8 + bob);
-		const B = '#c87800', Y = '#f8b800', W = '#fff8b0';
+		const B = "#c87800",
+			Y = "#f8b800",
+			W = "#fff8b0";
 		// 8×8 logical pixel art coin (each pixel = 2×2 px, total 16×16 px)
 		// Row 0: _ _ B B B B _ _
 		ctx.fillStyle = B;
-		ctx.fillRect(ox + 4,  oy,      8, 2);
+		ctx.fillRect(ox + 4, oy, 8, 2);
 		// Row 1: _ B Y Y Y Y B _
-		ctx.fillRect(ox + 2,  oy + 2,  2, 2); ctx.fillRect(ox + 12, oy + 2,  2, 2);
-		ctx.fillStyle = Y; ctx.fillRect(ox + 4,  oy + 2,  8, 2);
+		ctx.fillRect(ox + 2, oy + 2, 2, 2);
+		ctx.fillRect(ox + 12, oy + 2, 2, 2);
+		ctx.fillStyle = Y;
+		ctx.fillRect(ox + 4, oy + 2, 8, 2);
 		// Row 2: B W W Y Y Y Y B
-		ctx.fillStyle = B; ctx.fillRect(ox,      oy + 4,  2, 2); ctx.fillRect(ox + 14, oy + 4,  2, 2);
-		ctx.fillStyle = W; ctx.fillRect(ox + 2,  oy + 4,  4, 2);
-		ctx.fillStyle = Y; ctx.fillRect(ox + 6,  oy + 4,  8, 2);
+		ctx.fillStyle = B;
+		ctx.fillRect(ox, oy + 4, 2, 2);
+		ctx.fillRect(ox + 14, oy + 4, 2, 2);
+		ctx.fillStyle = W;
+		ctx.fillRect(ox + 2, oy + 4, 4, 2);
+		ctx.fillStyle = Y;
+		ctx.fillRect(ox + 6, oy + 4, 8, 2);
 		// Row 3: B W W Y Y Y Y B
-		ctx.fillStyle = B; ctx.fillRect(ox,      oy + 6,  2, 2); ctx.fillRect(ox + 14, oy + 6,  2, 2);
-		ctx.fillStyle = W; ctx.fillRect(ox + 2,  oy + 6,  4, 2);
-		ctx.fillStyle = Y; ctx.fillRect(ox + 6,  oy + 6,  8, 2);
+		ctx.fillStyle = B;
+		ctx.fillRect(ox, oy + 6, 2, 2);
+		ctx.fillRect(ox + 14, oy + 6, 2, 2);
+		ctx.fillStyle = W;
+		ctx.fillRect(ox + 2, oy + 6, 4, 2);
+		ctx.fillStyle = Y;
+		ctx.fillRect(ox + 6, oy + 6, 8, 2);
 		// Row 4: B Y Y Y Y Y Y B
-		ctx.fillStyle = B; ctx.fillRect(ox,      oy + 8,  2, 2); ctx.fillRect(ox + 14, oy + 8,  2, 2);
-		ctx.fillStyle = Y; ctx.fillRect(ox + 2,  oy + 8,  12, 2);
+		ctx.fillStyle = B;
+		ctx.fillRect(ox, oy + 8, 2, 2);
+		ctx.fillRect(ox + 14, oy + 8, 2, 2);
+		ctx.fillStyle = Y;
+		ctx.fillRect(ox + 2, oy + 8, 12, 2);
 		// Row 5: B Y Y Y Y Y Y B
-		ctx.fillStyle = B; ctx.fillRect(ox,      oy + 10, 2, 2); ctx.fillRect(ox + 14, oy + 10, 2, 2);
-		ctx.fillStyle = Y; ctx.fillRect(ox + 2,  oy + 10, 12, 2);
+		ctx.fillStyle = B;
+		ctx.fillRect(ox, oy + 10, 2, 2);
+		ctx.fillRect(ox + 14, oy + 10, 2, 2);
+		ctx.fillStyle = Y;
+		ctx.fillRect(ox + 2, oy + 10, 12, 2);
 		// Row 6: _ B Y Y Y Y B _
-		ctx.fillStyle = B; ctx.fillRect(ox + 2,  oy + 12, 2, 2); ctx.fillRect(ox + 12, oy + 12, 2, 2);
-		ctx.fillStyle = Y; ctx.fillRect(ox + 4,  oy + 12, 8, 2);
+		ctx.fillStyle = B;
+		ctx.fillRect(ox + 2, oy + 12, 2, 2);
+		ctx.fillRect(ox + 12, oy + 12, 2, 2);
+		ctx.fillStyle = Y;
+		ctx.fillRect(ox + 4, oy + 12, 8, 2);
 		// Row 7: _ _ B B B B _ _
-		ctx.fillStyle = B; ctx.fillRect(ox + 4,  oy + 14, 8, 2);
+		ctx.fillStyle = B;
+		ctx.fillRect(ox + 4, oy + 14, 8, 2);
 		ctx.restore();
 	}
 
@@ -822,18 +1043,242 @@ export class GameEngine {
 		const py = gy * TILE;
 		const ph = TILE * 3;
 
-		ctx.fillStyle = '#aaaaaa'; ctx.fillRect(px - 2, py - ph, 4, ph + TILE + 2);
+		ctx.fillStyle = "#aaaaaa";
+		ctx.fillRect(px - 2, py - ph, 4, ph + TILE + 2);
 
-		ctx.fillStyle = '#00cc00';
+		ctx.fillStyle = "#00cc00";
 		const wave = Math.sin(this._frame * 0.09) * 5;
 		ctx.beginPath();
 		ctx.moveTo(px + 2, py - ph);
 		ctx.quadraticCurveTo(px + 22, py - ph + 11 + wave, px + 2, py - ph + 22);
 		ctx.fill();
 
-		ctx.fillStyle = '#f8b800';
-		ctx.beginPath(); ctx.arc(px, py - ph, 5, 0, Math.PI * 2); ctx.fill();
+		ctx.fillStyle = "#f8b800";
+		ctx.beginPath();
+		ctx.arc(px, py - ph, 5, 0, Math.PI * 2);
+		ctx.fill();
 		ctx.restore();
+	}
+
+	_drawKoopaSprite(e, x, y) {
+		const ctx = this._ctx;
+		const ft = Math.floor(this._frame / 10) % 2;
+		if (!e.alive) {
+			if (e.squishTimer > 0) {
+				ctx.fillStyle = "#2d6b2d";
+				ctx.fillRect(x + 2, y + e.h - 6, e.w - 4, 6);
+				ctx.fillStyle = "#4ca84c";
+				ctx.fillRect(x + 4, y + e.h - 5, e.w - 8, 4);
+				ctx.fillStyle = "#1a3d1a";
+				ctx.fillRect(x + 11, y + e.h - 6, 2, 6);
+			}
+			return;
+		}
+		// Shell
+		ctx.fillStyle = "#2d6b2d";
+		ctx.fillRect(x + 3, y + 6, 18, 14);
+		ctx.fillStyle = "#4ca84c";
+		ctx.fillRect(x + 5, y + 8, 14, 10);
+		ctx.fillStyle = "#72c272";
+		ctx.fillRect(x + 6, y + 9, 5, 4);
+		ctx.fillStyle = "#1a3d1a";
+		ctx.fillRect(x + 3, y + 13, 18, 2);
+		ctx.fillStyle = "#1a3d1a";
+		ctx.fillRect(x + 12, y + 6, 2, 14);
+		// Head
+		ctx.fillStyle = "#f0d050";
+		ctx.fillRect(x + 7, y + 1, 12, 7);
+		ctx.fillStyle = "#ffffff";
+		ctx.fillRect(x + 8, y + 2, 3, 3);
+		ctx.fillStyle = "#ffffff";
+		ctx.fillRect(x + 14, y + 2, 3, 3);
+		ctx.fillStyle = "#111111";
+		ctx.fillRect(x + 9, y + 3, 2, 2);
+		ctx.fillStyle = "#111111";
+		ctx.fillRect(x + 15, y + 3, 2, 2);
+		ctx.fillStyle = "#e87820";
+		ctx.fillRect(x + 11, y + 6, 7, 2);
+		// Arms
+		ctx.fillStyle = "#f0d050";
+		ctx.fillRect(x, y + 9, 4, 4);
+		ctx.fillStyle = "#f0d050";
+		ctx.fillRect(x + 20, y + 9, 4, 4);
+		// Feet
+		ctx.fillStyle = "#e87820";
+		if (ft === 0) {
+			ctx.fillRect(x + 4, y + 20, 7, 4);
+			ctx.fillRect(x + 15, y + 18, 7, 4);
+		} else {
+			ctx.fillRect(x + 4, y + 18, 7, 4);
+			ctx.fillRect(x + 15, y + 20, 7, 4);
+		}
+	}
+
+	_spawnFireball(bowser) {
+		const p = this._player;
+		const dir = p.x + p.w / 2 < bowser.x + bowser.w / 2 ? -1 : 1;
+		this._fireballs.push({
+			x: dir < 0 ? bowser.x - 14 : bowser.x + bowser.w,
+			y: bowser.y + bowser.h * 0.35,
+			vx: dir * 4.5,
+			vy: -1.5,
+			w: 12,
+			h: 12,
+			alive: true,
+			frame: 0
+		});
+	}
+
+	_updateFireballs(p) {
+		const ctx = this._ctx;
+		for (const fb of this._fireballs) {
+			if (!fb.alive) continue;
+			fb.frame++;
+			fb.x += fb.vx;
+			fb.vy = Math.min(fb.vy + GRAVITY * 0.4, 8);
+			fb.y += fb.vy;
+			if (fb.x < -20 || fb.x > GW + 20 || fb.y > GH + 20) {
+				fb.alive = false;
+				continue;
+			}
+			const txL = Math.floor(fb.x / TILE),
+				txR = Math.floor((fb.x + fb.w - 1) / TILE);
+			const tyT = Math.floor(fb.y / TILE),
+				tyB = Math.floor((fb.y + fb.h - 1) / TILE);
+			let hit = false;
+			for (let ty = tyT; ty <= tyB && !hit; ty++)
+				for (let tx = txL; tx <= txR && !hit; tx++) {
+					const b = this._getTile(tx, ty);
+					if (b && this._isSolid(b.type)) hit = true;
+				}
+			if (hit) {
+				fb.alive = false;
+				continue;
+			}
+			if (p.invincible === 0 && this._overlap(p, fb)) {
+				fb.alive = false;
+				this._lives--;
+				p.invincible = 80;
+				p.vx = p.x < fb.x ? -4.5 : 4.5;
+				p.vy = -6;
+				this._notifyState();
+				if (this._lives <= 0) {
+					this._gameState = "dead";
+					setTimeout(() => this._notifyState(), 700);
+				}
+			}
+		}
+		this._fireballs = this._fireballs.filter((fb) => fb.alive);
+	}
+
+	_drawFireball(fb) {
+		const ctx = this._ctx;
+		const x = Math.round(fb.x),
+			y = Math.round(fb.y);
+		const f = Math.floor(fb.frame / 4) % 2;
+		ctx.fillStyle = "#bf360c";
+		ctx.fillRect(x + 2, y, 8, 2);
+		ctx.fillRect(x, y + 2, 12, 8);
+		ctx.fillRect(x + 2, y + 10, 8, 2);
+		ctx.fillStyle = "#ff6d00";
+		ctx.fillRect(x + 2, y + 2, 8, 8);
+		ctx.fillStyle = "#ffd600";
+		ctx.fillRect(x + 3 + f, y + 3, 5, 5);
+		ctx.fillStyle = "#ffffff";
+		ctx.fillRect(x + 4 + f, y + 4, 3, 3);
+	}
+
+	_drawBowserSprite(e, x, y) {
+		// NES Bowser: 3-color palette (green shell, orange skin, white spots/claws/spikes)
+		const ctx = this._ctx;
+		const G = "#3da830";
+		const Gd = "#2a7020";
+		const O = "#d47c3c";
+		const Od = "#b05820";
+		const W = "#ffffff";
+		const ft = Math.floor(this._frame / 14) % 2;
+		if (e.hitFlash > 0 && Math.floor(e.hitFlash / 5) % 2 === 1) ctx.globalAlpha = 0.4;
+
+		if (!e.alive) {
+			if (e.squishTimer > 0) {
+				ctx.fillStyle = G;
+				ctx.fillRect(x + 2, y + e.h - 10, e.w - 4, 10);
+				ctx.fillStyle = Gd;
+				ctx.fillRect(x + 2, y + e.h - 10, 4, 10);
+			}
+			ctx.globalAlpha = 1;
+			return;
+		}
+
+		ctx.save();
+		if (e.vx > 0) {
+			ctx.translate(x + e.w, 0);
+			ctx.scale(-1, 1);
+			ctx.translate(-x, 0);
+		}
+
+		// Head spikes (white)
+		ctx.fillStyle = W;
+		ctx.fillRect(x + 2, y + 0, 6, 10);
+		ctx.fillRect(x + 10, y + 0, 6, 14);
+		ctx.fillRect(x + 18, y + 2, 6, 10);
+		// Head (orange)
+		ctx.fillStyle = O;
+		ctx.fillRect(x + 0, y + 8, 22, 16);
+		ctx.fillRect(x + 2, y + 6, 18, 4);
+		ctx.fillStyle = Od;
+		ctx.fillRect(x + 0, y + 20, 22, 4);
+		// Shell dark edge + main
+		ctx.fillStyle = Gd;
+		ctx.fillRect(x + 10, y + 4, 38, 36);
+		ctx.fillStyle = G;
+		ctx.fillRect(x + 12, y + 6, 34, 32);
+		// Shell spots (white scattered rectangles — classic NES)
+		ctx.fillStyle = W;
+		ctx.fillRect(x + 14, y + 8, 8, 6);
+		ctx.fillRect(x + 26, y + 8, 8, 6);
+		ctx.fillRect(x + 38, y + 10, 6, 6);
+		ctx.fillRect(x + 16, y + 18, 8, 6);
+		ctx.fillRect(x + 28, y + 18, 8, 6);
+		ctx.fillRect(x + 38, y + 20, 6, 5);
+		ctx.fillRect(x + 14, y + 28, 8, 6);
+		ctx.fillRect(x + 26, y + 28, 8, 6);
+		ctx.fillRect(x + 38, y + 30, 6, 5);
+		// Arm (orange) + claws
+		ctx.fillStyle = O;
+		ctx.fillRect(x + 0, y + 22, 14, 8);
+		ctx.fillStyle = Od;
+		ctx.fillRect(x + 0, y + 28, 14, 2);
+		ctx.fillStyle = W;
+		ctx.fillRect(x + 0, y + 26, 6, 8);
+		ctx.fillRect(x + 8, y + 28, 6, 6);
+		// Belly strip
+		ctx.fillStyle = O;
+		ctx.fillRect(x + 10, y + 24, 4, 16);
+		// Legs
+		ctx.fillStyle = O;
+		if (ft === 0) {
+			ctx.fillRect(x + 12, y + 38, 14, 10);
+			ctx.fillRect(x + 30, y + 38, 14, 8);
+		} else {
+			ctx.fillRect(x + 12, y + 38, 14, 8);
+			ctx.fillRect(x + 30, y + 38, 14, 10);
+		}
+		// Toe claws
+		ctx.fillStyle = W;
+		ctx.fillRect(x + 10, y + 44, 6, 6);
+		ctx.fillRect(x + 18, y + 46, 6, 4);
+		ctx.fillRect(x + 28, y + 44, 6, 6);
+		ctx.fillRect(x + 36, y + 44, 6, 4);
+
+		ctx.restore();
+
+		// HP pips
+		for (let i = 0; i < e.hp; i++) {
+			ctx.fillStyle = "#e53935";
+			ctx.fillRect(x + e.w / 2 - (e.hp * 7) / 2 + i * 7, y - 10, 5, 5);
+		}
+		ctx.globalAlpha = 1;
 	}
 
 	_drawEnemy(e) {
@@ -843,10 +1288,23 @@ export class GameEngine {
 		ctx.save();
 		if (e.colorClass) ctx.filter = COLOR_FILTERS[e.colorClass];
 
+		if (e.enemyType === "bowser") {
+			this._drawBowserSprite(e, x, y);
+			ctx.restore();
+			return;
+		}
+
+		if (e.enemyType === "koopa") {
+			this._drawKoopaSprite(e, x, y);
+			ctx.restore();
+			return;
+		}
+
 		if (!e.alive) {
 			if (e.squishTimer > 0) {
-				ctx.fillStyle = '#b02800'; ctx.fillRect(x, y + e.h - 8, e.w, 8);
-				ctx.fillStyle = '#702000';
+				ctx.fillStyle = "#b02800";
+				ctx.fillRect(x, y + e.h - 8, e.w, 8);
+				ctx.fillStyle = "#702000";
 				ctx.fillRect(x + 2, y + e.h - 6, 4, 4);
 				ctx.fillRect(x + e.w - 6, y + e.h - 6, 4, 4);
 			}
@@ -856,29 +1314,43 @@ export class GameEngine {
 
 		const ft = Math.floor(this._frame / 11) % 2;
 
-		ctx.fillStyle = '#b02800';
+		ctx.fillStyle = "#b02800";
 		ctx.fillRect(x + 2, y + 11, e.w - 4, e.h - 11);
 		ctx.fillRect(x + 3, y + 7, e.w - 6, 6);
-		ctx.fillStyle = '#901800';
-		ctx.fillRect(x, y + 2, e.w, 12); ctx.fillRect(x + 2, y, e.w - 4, 4);
+		ctx.fillStyle = "#901800";
+		ctx.fillRect(x, y + 2, e.w, 12);
+		ctx.fillRect(x + 2, y, e.w - 4, 4);
 
-		ctx.fillStyle = 'white';
-		ctx.fillRect(x + 3, y + 3, 5, 5); ctx.fillRect(x + 16, y + 3, 5, 5);
-		ctx.fillStyle = '#111';
-		ctx.fillRect(x + 4, y + 4, 3, 3); ctx.fillRect(x + 17, y + 4, 3, 3);
+		ctx.fillStyle = "white";
+		ctx.fillRect(x + 3, y + 3, 5, 5);
+		ctx.fillRect(x + 16, y + 3, 5, 5);
+		ctx.fillStyle = "#111";
+		ctx.fillRect(x + 4, y + 4, 3, 3);
+		ctx.fillRect(x + 17, y + 4, 3, 3);
 
-		ctx.fillStyle = '#111';
-		ctx.save(); ctx.translate(x + 5, y + 3); ctx.rotate(-0.32); ctx.fillRect(0, 0, 7, 2); ctx.restore();
-		ctx.save(); ctx.translate(x + 14, y + 3); ctx.rotate(0.32); ctx.fillRect(2, 0, 7, 2); ctx.restore();
+		ctx.fillStyle = "#111";
+		ctx.save();
+		ctx.translate(x + 5, y + 3);
+		ctx.rotate(-0.32);
+		ctx.fillRect(0, 0, 7, 2);
+		ctx.restore();
+		ctx.save();
+		ctx.translate(x + 14, y + 3);
+		ctx.rotate(0.32);
+		ctx.fillRect(2, 0, 7, 2);
+		ctx.restore();
 
-		ctx.fillStyle = 'ivory';
-		ctx.fillRect(x + 7, y + 11, 4, 3); ctx.fillRect(x + 13, y + 11, 4, 3);
+		ctx.fillStyle = "ivory";
+		ctx.fillRect(x + 7, y + 11, 4, 3);
+		ctx.fillRect(x + 13, y + 11, 4, 3);
 
-		ctx.fillStyle = '#601000';
+		ctx.fillStyle = "#601000";
 		if (ft === 0) {
-			ctx.fillRect(x, y + e.h - 6, 9, 6); ctx.fillRect(x + e.w - 7, y + e.h - 4, 9, 4);
+			ctx.fillRect(x, y + e.h - 6, 9, 6);
+			ctx.fillRect(x + e.w - 7, y + e.h - 4, 9, 4);
 		} else {
-			ctx.fillRect(x, y + e.h - 4, 9, 4); ctx.fillRect(x + e.w - 7, y + e.h - 6, 9, 6);
+			ctx.fillRect(x, y + e.h - 4, 9, 4);
+			ctx.fillRect(x + e.w - 7, y + e.h - 6, 9, 6);
 		}
 		ctx.restore();
 	}
@@ -893,10 +1365,10 @@ export class GameEngine {
 		// Pipe animation: slide into / out of pipe with clipping
 		let y = Math.round(p.y);
 		let pipeClip = false;
-		if (p.pipeState === 'entering') {
+		if (p.pipeState === "entering") {
 			y = Math.round(p.y + (p.pipeTick / 30) * p.h);
 			pipeClip = true;
-		} else if (p.pipeState === 'exiting') {
+		} else if (p.pipeState === "exiting") {
 			y = Math.round(p.pipeClipY - (p.pipeTick / 30) * p.h);
 			pipeClip = true;
 		}
@@ -912,53 +1384,72 @@ export class GameEngine {
 
 		ctx.save();
 		if (p.dir === -1) {
-			ctx.translate(x + p.w, 0); ctx.scale(-1, 1); ctx.translate(-x, 0);
+			ctx.translate(x + p.w, 0);
+			ctx.scale(-1, 1);
+			ctx.translate(-x, 0);
 		}
 
-		ctx.fillStyle = '#dd1100';
-		ctx.fillRect(x + 3, y, 16, 5); ctx.fillRect(x + 1, y + 3, 18, 4);
+		ctx.fillStyle = "#dd1100";
+		ctx.fillRect(x + 3, y, 16, 5);
+		ctx.fillRect(x + 1, y + 3, 18, 4);
 		ctx.fillRect(x + 16, y + 4, 8, 3);
 
-		ctx.fillStyle = '#5a2200'; ctx.fillRect(x + 3, y + 5, 4, 2);
+		ctx.fillStyle = "#5a2200";
+		ctx.fillRect(x + 3, y + 5, 4, 2);
 
-		ctx.fillStyle = '#fca060';
-		ctx.fillRect(x + 2, y + 6, 18, 9); ctx.fillRect(x + 1, y + 7, 2, 7);
+		ctx.fillStyle = "#fca060";
+		ctx.fillRect(x + 2, y + 6, 18, 9);
+		ctx.fillRect(x + 1, y + 7, 2, 7);
 
-		ctx.fillStyle = '#e07040'; ctx.fillRect(x + 15, y + 9, 5, 3);
+		ctx.fillStyle = "#e07040";
+		ctx.fillRect(x + 15, y + 9, 5, 3);
 
-		ctx.fillStyle = '#111'; ctx.fillRect(x + 13, y + 7, 4, 4);
-		ctx.fillStyle = 'white'; ctx.fillRect(x + 14, y + 7, 2, 2);
+		ctx.fillStyle = "#111";
+		ctx.fillRect(x + 13, y + 7, 4, 4);
+		ctx.fillStyle = "white";
+		ctx.fillRect(x + 14, y + 7, 2, 2);
 
-		ctx.fillStyle = '#5a2200';
-		ctx.fillRect(x + 7, y + 12, 12, 2); ctx.fillRect(x + 9, y + 13, 10, 2);
+		ctx.fillStyle = "#5a2200";
+		ctx.fillRect(x + 7, y + 12, 12, 2);
+		ctx.fillRect(x + 9, y + 13, 10, 2);
 
-		ctx.fillStyle = '#dd1100'; ctx.fillRect(x + 4, y + 15, 14, 5);
+		ctx.fillStyle = "#dd1100";
+		ctx.fillRect(x + 4, y + 15, 14, 5);
 
-		ctx.fillStyle = '#0022cc';
-		ctx.fillRect(x + 2, y + 15, 5, 9); ctx.fillRect(x + 15, y + 15, 5, 9);
+		ctx.fillStyle = "#0022cc";
+		ctx.fillRect(x + 2, y + 15, 5, 9);
+		ctx.fillRect(x + 15, y + 15, 5, 9);
 		ctx.fillRect(x + 2, y + 20, 18, 4);
 
-		ctx.fillStyle = '#f8b800';
-		ctx.fillRect(x + 5, y + 17, 2, 2); ctx.fillRect(x + 15, y + 17, 2, 2);
+		ctx.fillStyle = "#f8b800";
+		ctx.fillRect(x + 5, y + 17, 2, 2);
+		ctx.fillRect(x + 15, y + 17, 2, 2);
 
-		ctx.fillStyle = '#0022cc';
+		ctx.fillStyle = "#0022cc";
 		if (wf === -1) {
-			ctx.fillRect(x + 2, y + 24, 7, 4); ctx.fillRect(x + 13, y + 22, 7, 4);
+			ctx.fillRect(x + 2, y + 24, 7, 4);
+			ctx.fillRect(x + 13, y + 22, 7, 4);
 		} else if (wf === 1) {
-			ctx.fillRect(x + 3, y + 24, 7, 4); ctx.fillRect(x + 13, y + 22, 7, 6);
+			ctx.fillRect(x + 3, y + 24, 7, 4);
+			ctx.fillRect(x + 13, y + 22, 7, 6);
 		} else if (wf === 2) {
-			ctx.fillRect(x + 3, y + 22, 7, 6); ctx.fillRect(x + 13, y + 24, 7, 4);
+			ctx.fillRect(x + 3, y + 22, 7, 6);
+			ctx.fillRect(x + 13, y + 24, 7, 4);
 		} else {
-			ctx.fillRect(x + 3, y + 24, 7, 4); ctx.fillRect(x + 13, y + 24, 7, 4);
+			ctx.fillRect(x + 3, y + 24, 7, 4);
+			ctx.fillRect(x + 13, y + 24, 7, 4);
 		}
 
-		ctx.fillStyle = '#5a2200';
+		ctx.fillStyle = "#5a2200";
 		if (wf === 1) {
-			ctx.fillRect(x + 1, y + 27, 11, 4); ctx.fillRect(x + 12, y + 25, 11, 4);
+			ctx.fillRect(x + 1, y + 27, 11, 4);
+			ctx.fillRect(x + 12, y + 25, 11, 4);
 		} else if (wf === 2) {
-			ctx.fillRect(x + 1, y + 25, 11, 4); ctx.fillRect(x + 12, y + 27, 11, 4);
+			ctx.fillRect(x + 1, y + 25, 11, 4);
+			ctx.fillRect(x + 12, y + 27, 11, 4);
 		} else {
-			ctx.fillRect(x + 1, y + 27, 11, 4); ctx.fillRect(x + 11, y + 27, 11, 4);
+			ctx.fillRect(x + 1, y + 27, 11, 4);
+			ctx.fillRect(x + 11, y + 27, 11, 4);
 		}
 
 		ctx.restore();

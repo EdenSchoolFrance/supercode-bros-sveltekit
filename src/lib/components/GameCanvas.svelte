@@ -1,7 +1,7 @@
 <script>
-	import { onMount } from 'svelte';
-	import { GameEngine } from '$lib/game/engine.js';
-	import { TILE, COLS, ROWS } from '$lib/game/constants.js';
+	import { onMount } from "svelte";
+	import { GameEngine } from "$lib/game/engine.js";
+	import { TILE, COLS, ROWS } from "$lib/game/constants.js";
 
 	let { htmlCode } = $props();
 
@@ -12,7 +12,7 @@
 	/** @type {import('$lib/game/engine.js').GameEngine | undefined} */
 	let engine;
 
-	let gameState = $state('menu');
+	let gameState = $state("menu");
 	let lives = $state(3);
 	let coinCount = $state(0);
 	let score = $state(0);
@@ -22,7 +22,7 @@
 
 	onMount(() => {
 		const eng = new GameEngine(canvas, (/** @type {any} */ s) => {
-			if (s.action === 'play-requested') {
+			if (s.action === "play-requested") {
 				playRequested = true;
 				return;
 			}
@@ -36,12 +36,14 @@
 		eng.loadLevel(htmlCode);
 		eng.renderStatic();
 
-		const onFsChange = () => { isFullscreen = !!document.fullscreenElement; };
-		document.addEventListener('fullscreenchange', onFsChange);
+		const onFsChange = () => {
+			isFullscreen = !!document.fullscreenElement;
+		};
+		document.addEventListener("fullscreenchange", onFsChange);
 
 		return () => {
 			eng.destroy();
-			document.removeEventListener('fullscreenchange', onFsChange);
+			document.removeEventListener("fullscreenchange", onFsChange);
 		};
 	});
 
@@ -58,7 +60,7 @@
 		if (!engine) return;
 
 		const timer = setTimeout(() => {
-			if (gameState === 'playing') {
+			if (gameState === "playing") {
 				// Restart the game with the new level
 				engine?.loadLevel(code);
 				engine?.start();
@@ -75,13 +77,13 @@
 	function handlePlay() {
 		engine?.loadLevel(htmlCode);
 		engine?.start();
-		gameState = 'playing';
+		gameState = "playing";
 	}
 
 	function handleReplay() {
 		engine?.loadLevel(htmlCode);
 		engine?.start();
-		gameState = 'playing';
+		gameState = "playing";
 	}
 
 	function handleFullscreen() {
@@ -120,22 +122,48 @@
 	function bindTouchBtn(node, key) {
 		const down = () => engine?.pressKey(key, true);
 		const up = () => engine?.pressKey(key, false);
-		node.addEventListener('touchstart', (/** @type {TouchEvent} */ e) => { e.preventDefault(); down(); }, { passive: false });
-		node.addEventListener('touchend',   (/** @type {TouchEvent} */ e) => { e.preventDefault(); up(); },   { passive: false });
-		node.addEventListener('touchcancel',(/** @type {TouchEvent} */ e) => { e.preventDefault(); up(); },   { passive: false });
-		node.addEventListener('mousedown', down);
-		node.addEventListener('mouseup', up);
-		return { destroy() {
-			node.removeEventListener('mousedown', down);
-			node.removeEventListener('mouseup', up);
-		}};
+		node.addEventListener(
+			"touchstart",
+			(/** @type {TouchEvent} */ e) => {
+				e.preventDefault();
+				down();
+			},
+			{ passive: false }
+		);
+		node.addEventListener(
+			"touchend",
+			(/** @type {TouchEvent} */ e) => {
+				e.preventDefault();
+				up();
+			},
+			{ passive: false }
+		);
+		node.addEventListener(
+			"touchcancel",
+			(/** @type {TouchEvent} */ e) => {
+				e.preventDefault();
+				up();
+			},
+			{ passive: false }
+		);
+		node.addEventListener("mousedown", down);
+		node.addEventListener("mouseup", up);
+		return {
+			destroy() {
+				node.removeEventListener("mousedown", down);
+				node.removeEventListener("mouseup", up);
+			}
+		};
 	}
 </script>
 
 <div class="game-panel">
 	<!-- HUD -->
 	<div class="hud">
-		<span>❤️ VIE : <span class="hud-val">{lives <= 0 ? '💀' : '❤️'.repeat(Math.max(0, lives))}</span></span>
+		<span
+			>❤️ VIE : <span class="hud-val">{lives <= 0 ? "💀" : "❤️".repeat(Math.max(0, lives))}</span
+			></span
+		>
 		<span>🪙 PIÈCES : <span class="hud-val">{coinCount}</span></span>
 		<span>⭐ SCORE : <span class="hud-val">{score}</span></span>
 	</div>
@@ -152,11 +180,12 @@
 		<button
 			class="fullscreen-btn"
 			onclick={handleFullscreen}
-			title={isFullscreen ? 'Quitter le plein écran' : 'Plein écran'}
-		>{isFullscreen ? '✕' : '⛶'}</button>
+			title={isFullscreen ? "Quitter le plein écran" : "Plein écran"}
+			>{isFullscreen ? "✕" : "⛶"}</button
+		>
 
 		<!-- Menu overlay -->
-		{#if gameState === 'menu'}
+		{#if gameState === "menu"}
 			<div class="overlay">
 				<div class="ov-icon">🍄</div>
 				<div class="ov-title">SUPER CODE BROS</div>
@@ -170,20 +199,20 @@
 		{/if}
 
 		<!-- Win overlay -->
-		{#if gameState === 'win'}
+		{#if gameState === "win"}
 			<div class="overlay">
 				<div class="ov-icon">🏆</div>
 				<div class="ov-title" style="color:#f8b800">VICTOIRE !</div>
 				<div class="ov-sub">
 					Bravo, tu as fini le niveau !<br /><br />
-					🪙 {coinCount} pièce{coinCount > 1 ? 's' : ''} &nbsp;·&nbsp; ⭐ {score} points
+					🪙 {coinCount} pièce{coinCount > 1 ? "s" : ""} &nbsp;·&nbsp; ⭐ {score} points
 				</div>
 				<button class="play-btn" onclick={handleReplay}>🔄 REJOUER</button>
 			</div>
 		{/if}
 
 		<!-- Dead overlay -->
-		{#if gameState === 'dead'}
+		{#if gameState === "dead"}
 			<div class="overlay">
 				<div class="ov-icon">💀</div>
 				<div class="ov-title" style="color:#cc2200">GAME OVER</div>
@@ -200,9 +229,9 @@
 
 	<!-- Touch controls -->
 	<div class="touch-pad">
-		<button class="t-btn" use:bindTouchBtn={'left'}>◀</button>
-		<button class="t-btn" use:bindTouchBtn={'jump'}>▲</button>
-		<button class="t-btn" use:bindTouchBtn={'right'}>▶</button>
+		<button class="t-btn" use:bindTouchBtn={"left"}>◀</button>
+		<button class="t-btn" use:bindTouchBtn={"jump"}>▲</button>
+		<button class="t-btn" use:bindTouchBtn={"right"}>▶</button>
 	</div>
 </div>
 
@@ -226,7 +255,7 @@
 		background: #111122;
 		border: 2px solid rgba(248, 184, 0, 0.3);
 		padding: 7px 20px;
-		font-family: 'Press Start 2P', monospace;
+		font-family: "Press Start 2P", monospace;
 		font-size: clamp(0.45em, 1.2vw, 0.6em);
 		color: #e8e8ff;
 		flex-shrink: 0;
@@ -321,7 +350,7 @@
 	}
 
 	.ov-title {
-		font-family: 'Press Start 2P', monospace;
+		font-family: "Press Start 2P", monospace;
 		font-size: clamp(0.8em, 2.5vw, 1.4em);
 		color: #f8b800;
 		text-shadow: 4px 4px 0 #cc2200;
@@ -329,7 +358,7 @@
 	}
 
 	.ov-sub {
-		font-family: 'Courier New', monospace;
+		font-family: "Courier New", monospace;
 		font-size: clamp(0.65em, 1.8vw, 0.82em);
 		color: #aab;
 		text-align: center;
@@ -346,12 +375,14 @@
 		cursor: pointer;
 		background: #009900;
 		color: #fff;
-		font-family: 'Press Start 2P', monospace;
+		font-family: "Press Start 2P", monospace;
 		font-size: clamp(0.5em, 1.5vw, 0.8em);
 		padding: 12px 40px;
 		border: 3px solid #006600;
 		box-shadow: 0 6px 0 #003300;
-		transition: box-shadow 0.08s, transform 0.08s;
+		transition:
+			box-shadow 0.08s,
+			transform 0.08s;
 		letter-spacing: 2px;
 	}
 
@@ -369,7 +400,7 @@
 	.grid-btn {
 		all: unset;
 		cursor: pointer;
-		font-family: 'Press Start 2P', monospace;
+		font-family: "Press Start 2P", monospace;
 		font-size: 0.5em;
 		color: #778;
 		border: 2px solid rgba(255, 255, 255, 0.12);
@@ -412,7 +443,7 @@
 		background: rgba(255, 255, 255, 0.12);
 		border: 2px solid rgba(255, 255, 255, 0.25);
 		color: #fff;
-		font-family: 'Press Start 2P', monospace;
+		font-family: "Press Start 2P", monospace;
 		font-size: 0.85em;
 		width: 60px;
 		height: 60px;

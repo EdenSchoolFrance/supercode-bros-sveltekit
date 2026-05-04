@@ -1,17 +1,19 @@
 <script>
-	import CodeEditor from '$lib/components/CodeEditor.svelte';
-	import GameCanvas from '$lib/components/GameCanvas.svelte';
-	import { defaultLevel } from '$lib/game/defaultLevel.js';
-	import imgSol      from '$lib/assets/sol.png';
-	import imgBrique   from '$lib/assets/brique.png';
-	import imgQuestion from '$lib/assets/question.png';
-	import imgTuyau    from '$lib/assets/tuyau.png';
-	import imgSpike    from '$lib/assets/spike.png';
-	import imgCloud    from '$lib/assets/cloud.png';
-	import imgDrapeau  from '$lib/assets/drapeau.png';
-	import imgPiece    from '$lib/assets/piece.png';
-	import imgGoomba   from '$lib/assets/goomba.png';
-	import imgMario    from '$lib/assets/mario.png';
+	import CodeEditor from "$lib/components/CodeEditor.svelte";
+	import GameCanvas from "$lib/components/GameCanvas.svelte";
+	import { defaultLevel } from "$lib/game/defaultLevel.js";
+	import imgSol from "$lib/assets/sol.png";
+	import imgBrique from "$lib/assets/brique.png";
+	import imgQuestion from "$lib/assets/question.png";
+	import imgTuyau from "$lib/assets/tuyau.png";
+	import imgSpike from "$lib/assets/spike.png";
+	import imgCloud from "$lib/assets/cloud.png";
+	import imgDrapeau from "$lib/assets/drapeau.png";
+	import imgPiece from "$lib/assets/piece.png";
+	import imgGoomba from "$lib/assets/goomba.png";
+	import imgMario from "$lib/assets/mario.png";
+	import imgKoopa from "$lib/assets/koopa.svg";
+	import imgBowser from "$lib/assets/bowser.svg";
 
 	let code = $state(defaultLevel);
 	let splitPos = $state(45); // left panel % width
@@ -19,16 +21,90 @@
 	let legendOpen = $state(false);
 
 	const TAGS = [
-		{ tag: 'h1',    img: imgSol,      name: 'Sol',           desc: 'Plateforme solide',                              attrs: 'data-x="?" data-y="?"' },
-		{ tag: 'h2',    img: imgBrique,   name: 'Brique',        desc: 'Plateforme en briques',                          attrs: 'data-x="?" data-y="?"' },
-		{ tag: 'h3',    img: imgQuestion, name: 'Bloc ?',        desc: 'Frappe dessous = pièce !',                       attrs: 'data-x="?" data-y="?"' },
-		{ tag: 'a',     img: imgTuyau,    name: 'Tuyau',         desc: '↓ sur un tuyau lié = téléportation !',           attrs: 'id="?" data-x="?" data-y="?" href="#?"' },
-		{ tag: 'hr',    img: imgSpike,    name: 'Pic',           desc: 'Toucher = dégâts ! (pic de fer)',                attrs: 'data-x="?" data-y="?"' },
-		{ tag: 'h5',    img: imgCloud,    name: 'Nuage',         desc: 'Plateforme traversable',                         attrs: 'data-x="?" data-y="?"' },
-		{ tag: 'h6',    img: imgDrapeau,  name: 'Drapeau',       desc: 'Objectif de fin de niveau',                     attrs: 'data-x="?" data-y="?"' },
-		{ tag: 'p',     img: imgPiece,    name: 'Pièce',         desc: 'À collecter (+50 pts)',                          attrs: 'data-x="?" data-y="?"' },
-		{ tag: 'input', img: imgGoomba,   name: 'Ennemi Goomba', desc: 'name="goomba" · saute dessus pour vaincre',      attrs: 'name="goomba" data-x="?" data-y="?"' },
-		{ tag: 'input', img: imgMario,    name: 'Spawn Mario',   desc: 'name="mario" · point de départ unique du joueur', attrs: 'name="mario" data-x="?" data-y="?"' },
+		{
+			tag: "h1",
+			img: imgSol,
+			name: "Sol",
+			desc: "Plateforme solide",
+			attrs: 'data-x="?" data-y="?"'
+		},
+		{
+			tag: "h2",
+			img: imgBrique,
+			name: "Brique",
+			desc: "Plateforme en briques",
+			attrs: 'data-x="?" data-y="?"'
+		},
+		{
+			tag: "h3",
+			img: imgQuestion,
+			name: "Bloc ?",
+			desc: "Frappe dessous = pièce !",
+			attrs: 'data-x="?" data-y="?"'
+		},
+		{
+			tag: "a",
+			img: imgTuyau,
+			name: "Tuyau",
+			desc: "↓ sur un tuyau lié = téléportation !",
+			attrs: 'id="?" data-x="?" data-y="?" href="#?"'
+		},
+		{
+			tag: "hr",
+			img: imgSpike,
+			name: "Pic",
+			desc: "Toucher = dégâts ! (pic de fer)",
+			attrs: 'data-x="?" data-y="?"'
+		},
+		{
+			tag: "h5",
+			img: imgCloud,
+			name: "Nuage",
+			desc: "Plateforme traversable",
+			attrs: 'data-x="?" data-y="?"'
+		},
+		{
+			tag: "h6",
+			img: imgDrapeau,
+			name: "Drapeau",
+			desc: "Objectif de fin de niveau",
+			attrs: 'data-x="?" data-y="?"'
+		},
+		{
+			tag: "p",
+			img: imgPiece,
+			name: "Pièce",
+			desc: "À collecter (+50 pts)",
+			attrs: 'data-x="?" data-y="?"'
+		},
+		{
+			tag: "input",
+			img: imgGoomba,
+			name: "Ennemi Goomba",
+			desc: 'name="goomba" · saute dessus pour vaincre',
+			attrs: 'name="goomba" data-x="?" data-y="?"'
+		},
+		{
+			tag: "input",
+			img: imgKoopa,
+			name: "Ennemi Koopa",
+			desc: 'name="koopa" · tortue verte · saute dessus pour vaincre',
+			attrs: 'name="koopa" data-x="?" data-y="?"'
+		},
+		{
+			tag: "input",
+			img: imgBowser,
+			name: "Boss Bowser",
+			desc: 'type="boss" name="bowser" · 3 coups · lance des boules de feu',
+			attrs: 'type="boss" name="bowser" data-x="?" data-y="?"'
+		},
+		{
+			tag: "input",
+			img: imgMario,
+			name: "Spawn Mario",
+			desc: 'name="mario" · point de départ unique du joueur',
+			attrs: 'name="mario" data-x="?" data-y="?"'
+		}
 	];
 	/** @type {HTMLDivElement} */
 	let containerEl;
@@ -110,13 +186,34 @@
 						<div class="legend-coords">
 							<div class="coord-grid-label">Balise &lt;input&gt; — attribut name</div>
 							<div class="coord-row">
-								<span>👾 &nbsp;<code style="color:#79c0ff">name="goomba"</code> &nbsp;→ ennemi qui marche (saute dessus pour le vaincre)</span>
+								<span
+									>👾 &nbsp;<code style="color:#79c0ff">name="goomba"</code> &nbsp;→ ennemi Goomba (saute
+									dessus pour vaincre)</span
+								>
 							</div>
 							<div class="coord-row">
-								<span>🍄 &nbsp;<code style="color:#79c0ff">name="mario"</code> &nbsp;→ point de départ de Mario dans le niveau</span>
+								<span
+									>🐢 &nbsp;<code style="color:#79c0ff">name="koopa"</code> &nbsp;→ ennemi Koopa Troopa
+									— tortue verte (saute dessus pour vaincre)</span
+								>
 							</div>
 							<div class="coord-row">
-								<span class="coord-dim">Un seul spawn par niveau. Sans name="mario", Mario part au-dessus du 1er bloc de sol.</span>
+								<span
+									>🔥 &nbsp;<code style="color:#79c0ff">type="boss" name="bowser"</code> &nbsp;→ Boss
+									Bowser · taille ×2 · 3 coups · boules de feu toutes les 3 s</span
+								>
+							</div>
+							<div class="coord-row">
+								<span
+									>🍄 &nbsp;<code style="color:#79c0ff">name="mario"</code> &nbsp;→ point de départ de
+									Mario dans le niveau</span
+								>
+							</div>
+							<div class="coord-row">
+								<span class="coord-dim"
+									>Un seul spawn par niveau. Sans name="mario", Mario part au-dessus du 1er bloc de
+									sol.</span
+								>
 							</div>
 						</div>
 					</div>
@@ -135,7 +232,9 @@
 				<span class="tag"><code>&lt;h5&gt;</code> Nuage</span>
 				<span class="tag"><code>&lt;h6&gt;</code> Drapeau</span>
 				<span class="tag"><code>&lt;p&gt;</code> Pièce</span>
-				<span class="tag"><code>&lt;input name="goomba"&gt;</code> Ennemi</span>
+				<span class="tag"><code>&lt;input name="goomba"&gt;</code> Goomba</span>
+				<span class="tag"><code>&lt;input name="koopa"&gt;</code> Koopa</span>
+				<span class="tag"><code>&lt;input type="boss"&gt;</code> Bowser 🔥</span>
 				<span class="tag"><code>&lt;input name="mario"&gt;</code> Spawn</span>
 			</div>
 		</div>
@@ -180,7 +279,7 @@
 		flex-direction: column;
 		height: 100vh;
 		overflow: hidden;
-		font-family: 'Press Start 2P', monospace;
+		font-family: "Press Start 2P", monospace;
 	}
 
 	.header {
@@ -221,7 +320,7 @@
 	}
 
 	.subtitle {
-		font-family: 'Courier New', monospace;
+		font-family: "Courier New", monospace;
 		font-size: clamp(0.55em, 1.2vw, 0.7em);
 		color: #5566aa;
 		letter-spacing: 1px;
@@ -279,7 +378,7 @@
 		background: rgba(248, 184, 0, 0.08);
 		border: 1px solid rgba(248, 184, 0, 0.25);
 		color: #f8b800;
-		font-family: 'Press Start 2P', monospace;
+		font-family: "Press Start 2P", monospace;
 		font-size: 0.9em;
 		padding: 5px 10px;
 		letter-spacing: 1px;
@@ -331,7 +430,7 @@
 	}
 
 	.legend-hint {
-		font-family: 'Courier New', monospace;
+		font-family: "Courier New", monospace;
 		font-size: 0.65em;
 		color: #4a5580;
 		text-align: center;
@@ -368,7 +467,7 @@
 	}
 
 	.l-tag {
-		font-family: 'Courier New', monospace;
+		font-family: "Courier New", monospace;
 		font-size: 0.55em;
 		color: #79c0ff;
 		overflow: hidden;
@@ -377,7 +476,7 @@
 	}
 
 	.l-name {
-		font-family: 'Courier New', monospace;
+		font-family: "Courier New", monospace;
 		font-size: 0.6em;
 		color: #7788aa;
 	}
@@ -399,7 +498,7 @@
 	}
 
 	.coord-row {
-		font-family: 'Courier New', monospace;
+		font-family: "Courier New", monospace;
 		font-size: 0.62em;
 		color: #556080;
 	}
@@ -419,7 +518,7 @@
 	}
 
 	.tag {
-		font-family: 'Courier New', monospace;
+		font-family: "Courier New", monospace;
 		font-size: 0.62em;
 		color: #556;
 		white-space: nowrap;

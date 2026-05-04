@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <!-- NES Bowser: 3 colors — green shell, orange skin, white accents -->
+
+  <!-- Head spikes (white) -->
+  <rect x="1"  y="0"  width="3" height="6"  fill="#ffffff"/>
+  <rect x="6"  y="0"  width="3" height="8"  fill="#ffffff"/>
+  <rect x="11" y="1"  width="3" height="6"  fill="#ffffff"/>
+
+  <!-- Head (orange) -->
+  <rect x="0"  y="5"  width="14" height="10" fill="#d47c3c"/>
+
+  <!-- Shell body (green) -->
+  <rect x="6"  y="3"  width="26" height="22" fill="#3da830"/>
+  <!-- Shell dark edge -->
+  <rect x="6"  y="3"  width="2"  height="22" fill="#2a7020"/>
+
+  <!-- Shell spots (white) — classic scattered rectangles -->
+  <rect x="9"  y="5"  width="4"  height="3"  fill="#ffffff"/>
+  <rect x="17" y="5"  width="4"  height="3"  fill="#ffffff"/>
+  <rect x="25" y="5"  width="4"  height="3"  fill="#ffffff"/>
+  <rect x="11" y="12" width="4"  height="3"  fill="#ffffff"/>
+  <rect x="20" y="12" width="4"  height="3"  fill="#ffffff"/>
+  <rect x="27" y="13" width="3"  height="3"  fill="#ffffff"/>
+  <rect x="9"  y="19" width="4"  height="3"  fill="#ffffff"/>
+  <rect x="19" y="20" width="4"  height="3"  fill="#ffffff"/>
+
+  <!-- Arm (orange) extending left -->
+  <rect x="0"  y="13" width="9"  height="5"  fill="#d47c3c"/>
+  <!-- Claw (white) -->
+  <rect x="0"  y="16" width="3"  height="4"  fill="#ffffff"/>
+  <rect x="4"  y="17" width="3"  height="3"  fill="#ffffff"/>
+
+  <!-- Legs (orange) -->
+  <rect x="8"  y="25" width="8"  height="6"  fill="#d47c3c"/>
+  <rect x="20" y="25" width="8"  height="5"  fill="#d47c3c"/>
+  <!-- Toes (white) -->
+  <rect x="6"  y="29" width="3"  height="3"  fill="#ffffff"/>
+  <rect x="11" y="30" width="3"  height="2"  fill="#ffffff"/>
+  <rect x="19" y="28" width="3"  height="3"  fill="#ffffff"/>
+  <rect x="25" y="29" width="3"  height="2"  fill="#ffffff"/>
+</svg>

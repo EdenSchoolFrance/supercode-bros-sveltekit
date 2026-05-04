@@ -1,10 +1,10 @@
 <script>
-	import { onMount } from 'svelte';
-	import { EditorView, basicSetup } from 'codemirror';
-	import { html } from '@codemirror/lang-html';
-	import { oneDark } from '@codemirror/theme-one-dark';
+	import { onMount } from "svelte";
+	import { EditorView, basicSetup } from "codemirror";
+	import { html } from "@codemirror/lang-html";
+	import { oneDark } from "@codemirror/theme-one-dark";
 
-	let { value = $bindable('') } = $props();
+	let { value = $bindable("") } = $props();
 
 	/** @type {HTMLDivElement} */
 	let container;
@@ -12,10 +12,10 @@
 	let view;
 
 	const marioTheme = EditorView.theme({
-		'&': { height: '100%', fontSize: '13px' },
-		'.cm-scroller': { overflow: 'auto', fontFamily: '"Courier New", monospace' },
-		'.cm-content': { padding: '12px 0' },
-		'.cm-focused': { outline: 'none' }
+		"&": { height: "100%", fontSize: "13px" },
+		".cm-scroller": { overflow: "auto", fontFamily: '"Courier New", monospace' },
+		".cm-content": { padding: "12px 0" },
+		".cm-focused": { outline: "none" }
 	});
 
 	onMount(() => {

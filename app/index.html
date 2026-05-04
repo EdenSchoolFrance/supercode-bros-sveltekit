@@ -202,7 +202,23 @@
 					<div>
 						<div class="g-tag">&lt;input name="goomba" data-x="?" data-y="?"&gt;</div>
 						<div class="g-name">ENNEMI Goomba — saute dessus pour vaincre</div>
-						<div class="g-pos">x: 1-25 · y: 1-14 · name="goomba" = ennemi</div>
+						<div class="g-pos">x: 1-25 · y: 1-14 · name="goomba" = goomba</div>
+					</div>
+				</div>
+				<div class="g-card">
+					<img class="g-icon" src="assets/koopa.svg" alt="Koopa" />
+					<div>
+						<div class="g-tag">&lt;input name="koopa" data-x="?" data-y="?"&gt;</div>
+						<div class="g-name">ENNEMI Koopa — tortue verte · saute dessus</div>
+						<div class="g-pos">x: 1-25 · y: 1-14 · name="koopa" = koopa</div>
+					</div>
+				</div>
+				<div class="g-card">
+					<img class="g-icon" src="assets/bowser.svg" alt="Bowser" />
+					<div>
+						<div class="g-tag">&lt;input type="boss" name="bowser" data-x="?" data-y="?"&gt;</div>
+						<div class="g-name">BOSS Bowser 🔥 — 3 coups · boules de feu</div>
+						<div class="g-pos">x: 1-25 · y: 1-14 · taille ×2 · feu toutes les 3 s</div>
 					</div>
 				</div>
 				<div class="g-card">
@@ -226,8 +242,13 @@
 				⌨️ Clavier : ← → pour bouger · ↑ ou ESPACE pour sauter · ↓ sur un tuyau lié pour téléporter
 				· ENTRÉE pour recommencer<br />
 				📱 Mobile : utilise les boutons ◀ ▲ ▶ ci-dessus<br /><br />
-				🎮 Balise <strong>&lt;input&gt;</strong> — l'attribut <strong>name</strong> détermine le type :<br />
-				&nbsp;&nbsp;👾 <code>name="goomba"</code> → ennemi qui marche (saute dessus pour le vaincre)<br />
+				🎮 Balise <strong>&lt;input&gt;</strong> — l'attribut <strong>name</strong> détermine le
+				type :<br />
+				&nbsp;&nbsp;👾 <code>name="goomba"</code> → ennemi Goomba (saute dessus pour le vaincre)<br />
+				&nbsp;&nbsp;🐢 <code>name="koopa"</code> → ennemi Koopa Troopa (tortue verte, saute
+				dessus)<br />
+				&nbsp;&nbsp;🔥 <code>type="boss" name="bowser"</code> → Boss Bowser · taille ×2 · 3 coups ·
+				boules de feu toutes les 3 s<br />
 				&nbsp;&nbsp;🍄 <code>name="mario"</code> → point de départ de Mario (1 seul par niveau)<br />
 				&nbsp;&nbsp;Sans <code>name="mario"</code>, Mario apparaît au-dessus du 1er bloc de sol.
 			</div>
