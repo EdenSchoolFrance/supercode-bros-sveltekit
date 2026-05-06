@@ -35,9 +35,15 @@ export const defaultLevel = `
 <h2 data-x="7"  data-y="12"></h2>
 
 <!-- ══════ BLOCS QUESTION (?) ════════ -->
-<h3 data-x="10" data-y="11"></h3>
-<h3 data-x="14" data-y="10"></h3>
-<h3 data-x="20" data-y="10"></h3>
+<h3 data-x="10" data-y="11" data-item="flower"></h3>
+<h3 data-x="14" data-y="10" data-item="mushroom"></h3>
+<h3 data-x="20" data-y="10" data-item="star"></h3>
+
+<!-- ══════ BLOCS Lave ═══════ -->
+<i data-x="11" data-y="15"></i>
+
+<!-- ══════ BLOCS PLATEFORM ════════ -->
+<aside data-x="4" data-y="8"></aside>
 
 <!-- ══════ TUYAUX ══════════ -->
 <a id="tuyau-1" data-x="10" data-y="14" href="#tuyau-2"></a>

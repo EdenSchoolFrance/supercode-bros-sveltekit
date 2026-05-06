@@ -39,8 +39,8 @@
 			tag: "h3",
 			img: imgQuestion,
 			name: "Bloc ?",
-			desc: "Frappe dessous = pièce !",
-			attrs: 'data-x="?" data-y="?"'
+			desc: 'data-item="coin" | "star" | "mushroom" | "flower"',
+			attrs: 'data-x="?" data-y="?" data-item="coin"'
 		},
 		{
 			tag: "a",
@@ -57,11 +57,25 @@
 			attrs: 'data-x="?" data-y="?"'
 		},
 		{
+			tag: "i",
+			emoji: "🔥",
+			name: "Lave",
+			desc: "Traversable mais MORT INSTANTANÉE",
+			attrs: 'data-x="?" data-y="?"'
+		},
+		{
 			tag: "h5",
 			img: imgCloud,
 			name: "Nuage",
-			desc: "Plateforme traversable",
+			desc: "Plateforme traversable (s'effondre après 1 s)",
 			attrs: 'data-x="?" data-y="?"'
+		},
+		{
+			tag: "aside",
+			emoji: "🪜",
+			name: "Plateforme mobile",
+			desc: "Bouge horizontalement · porte le joueur",
+			attrs: 'data-x="?" data-y="?" data-w="2" data-range="4" data-speed="1.2"'
 		},
 		{
 			tag: "h6",
@@ -163,7 +177,11 @@
 						<div class="legend-grid">
 							{#each TAGS as t}
 								<div class="legend-card">
-									<img class="l-icon" src={t.img} alt={t.name} />
+									{#if t.emoji}
+										<div class="l-icon l-emoji">{t.emoji}</div>
+									{:else}
+										<img class="l-icon" src={t.img} alt={t.name} />
+									{/if}
 									<div class="l-body">
 										<div class="l-tag">&lt;{t.tag} {t.attrs}&gt;&lt;/{t.tag}&gt;</div>
 										<div class="l-name">{t.name} — {t.desc}</div>
@@ -183,6 +201,50 @@
 								<span>y="1" = haut &nbsp;·&nbsp; y="15" = bas (sol)</span>
 							</div>
 						</div>
+						<div class="legend-coords">
+							<div class="coord-grid-label">Balise &lt;h3&gt; — attribut data-item</div>
+							<div class="coord-row">
+								<span
+									>🪙 &nbsp;<code style="color:#79c0ff">data-item="coin"</code> &nbsp;→ pièce (+50 pts)
+									— défaut</span
+								>
+							</div>
+							<div class="coord-row">
+								<span
+									>⭐ &nbsp;<code style="color:#79c0ff">data-item="star"</code> &nbsp;→ étoile —
+									invincibilité 5 s avec aura arc-en-ciel</span
+								>
+							</div>
+							<div class="coord-row">
+								<span
+									>🍄 &nbsp;<code style="color:#79c0ff">data-item="mushroom"</code> &nbsp;→ champignon
+									— Mario grandit · +1 ❤️</span
+								>
+							</div>
+							<div class="coord-row">
+								<span
+									>🌸 &nbsp;<code style="color:#79c0ff">data-item="flower"</code> &nbsp;→ fleur —
+									Mario rose · +1 ❤️ · touche <strong>E</strong> = boule de feu</span
+								>
+							</div>
+						</div>
+
+						<div class="legend-coords">
+							<div class="coord-grid-label">Contrôles</div>
+							<div class="coord-row">
+								<span>← → bouger · ↑ / ESPACE sauter · ↓ tuyau lié = téléporter</span>
+							</div>
+							<div class="coord-row">
+								<span><strong>E</strong> = lancer une boule de feu (avec fleur 🌸)</span>
+							</div>
+							<div class="coord-row">
+								<span class="coord-dim"
+									>Subir des dégâts → perte de l'effet fleur/champignon · Lave → mort instantanée
+									(sauf invincible)</span
+								>
+							</div>
+						</div>
+
 						<div class="legend-coords">
 							<div class="coord-grid-label">Balise &lt;input&gt; — attribut name</div>
 							<div class="coord-row">
@@ -226,10 +288,12 @@
 			<div class="tag-guide">
 				<span class="tag"><code>&lt;h1&gt;</code> Sol</span>
 				<span class="tag"><code>&lt;h2&gt;</code> Brique</span>
-				<span class="tag"><code>&lt;h3&gt;</code> Bloc ?</span>
+				<span class="tag"><code>&lt;h3 data-item&gt;</code> Bloc ?</span>
 				<span class="tag"><code>&lt;a&gt;</code> Tuyau ↓</span>
 				<span class="tag"><code>&lt;hr&gt;</code> Pic ☠</span>
+				<span class="tag"><code>&lt;i&gt;</code> Lave 🔥</span>
 				<span class="tag"><code>&lt;h5&gt;</code> Nuage</span>
+				<span class="tag"><code>&lt;aside&gt;</code> Plateforme 🪜</span>
 				<span class="tag"><code>&lt;h6&gt;</code> Drapeau</span>
 				<span class="tag"><code>&lt;p&gt;</code> Pièce</span>
 				<span class="tag"><code>&lt;input name="goomba"&gt;</code> Goomba</span>
@@ -457,6 +521,13 @@
 		object-fit: contain;
 		flex-shrink: 0;
 		image-rendering: pixelated;
+	}
+
+	.l-emoji {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 24px;
 	}
 
 	.l-body {
