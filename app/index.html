@@ -71,9 +71,6 @@
 			<h1 data-x="9" data-y="15"></h1>
 			<h1 data-x="10" data-y="15"></h1>
 			<!-- TROU ICI en colonne 11 : Mario peut tomber ! -->
-			<h1 data-x="12" data-y="15"></h1>
-			<h1 data-x="13" data-y="15"></h1>
-			<h1 data-x="14" data-y="15"></h1>
 			<h1 data-x="15" data-y="15"></h1>
 			<h1 data-x="16" data-y="15"></h1>
 			<h1 data-x="17" data-y="15"></h1>
@@ -86,48 +83,54 @@
 			<h1 data-x="24" data-y="15"></h1>
 			<h1 data-x="25" data-y="15"></h1>
 
-			<!-- ═══════ PLATEFORMES BRIQUES ═══════ -->
-			<h2 data-x="4" data-y="12"></h2>
-			<h2 data-x="5" data-y="12"></h2>
-			<h2 data-x="6" data-y="12"></h2>
-			<h2 data-x="7" data-y="12"></h2>
-
-			<!-- ═══════ BLOCS OBJETS (?) ═══════ -->
-			<h3 class="red" data-x="10" data-y="11"></h3>
-			<h3 data-x="20" data-y="10"></h3>
-			<h3 data-x="14" data-y="10"></h3>
-
-			<!-- ═══════ TUYAUX ═══════ -->
-			<a class="red" id="pipe-a" data-x="13" data-y="14" href="#pipe-b"></a>
-			<a id="pipe-b" data-x="10" data-y="14" href="#pipe-a"></a>
-
-			<!-- ═══════ NUAGES (plateformes) ═══════ -->
-			<h5 class="red" data-x="16" data-y="10"></h5>
-			<h5 data-x="17" data-y="10"></h5>
-			<h5 data-x="18" data-y="10"></h5>
-
-			<!-- ═══════ PIÈCES ═══════ -->
-			<p data-x="4" data-y="11"></p>
-			<p data-x="5" data-y="11"></p>
-			<p data-x="6" data-y="11"></p>
-			<p data-x="7" data-y="11"></p>
-			<p data-x="10" data-y="10"></p>
-			<p data-x="16" data-y="9"></p>
-			<p data-x="17" data-y="9"></p>
-			<p data-x="18" data-y="9"></p>
-			<p data-x="20" data-y="9"></p>
-
-			<!-- ═══════ PIÈGES ═══════ -->
-			<hr data-x="20" data-y="8" />
-
 			<!-- ═══════ JOUEUR (mario) ═══════ -->
 			<input name="mario" class="red" data-x="0" data-y="14" />
 
-			<!-- ═══════ ENNEMIS (saute dessus pour les vaincre) ═══════ -->
-			<input name="goomba" class="red" data-x="22" data-y="14" />
-
 			<!-- ═══════ DRAPEAU (objectif final) ═══════ -->
-			<h6 class="red" data-x="25" data-y="11"></h6>
+			<h6 data-x="21" data-y="10"></h6>
+			<h2 data-x="18" data-y="6"></h2>
+			<h2 data-x="19" data-y="6"></h2>
+			<h2 data-x="20" data-y="6"></h2>
+			<h2 data-x="21" data-y="6"></h2>
+			<h2 data-x="22" data-y="6"></h2>
+			<h2 data-x="18" data-y="7"></h2>
+			<h2 data-x="22" data-y="7"></h2>
+			<h2 data-x="22" data-y="11"></h2>
+			<h2 data-x="21" data-y="11"></h2>
+			<h2 data-x="18" data-y="8"></h2>
+			<h2 data-x="22" data-y="8"></h2>
+			<h2 data-x="16" data-y="9"></h2>
+			<h2 data-x="17" data-y="9"></h2>
+			<h2 data-x="18" data-y="9"></h2>
+			<h2 data-x="22" data-y="9"></h2>
+			<h2 data-x="23" data-y="9"></h2>
+			<h2 data-x="24" data-y="9"></h2>
+			<h2 data-x="16" data-y="10"></h2>
+			<h2 data-x="24" data-y="10"></h2>
+			<h2 data-x="16" data-y="11"></h2>
+			<h2 data-x="24" data-y="11"></h2>
+			<h2 data-x="15" data-y="12"></h2>
+			<h2 data-x="25" data-y="12"></h2>
+			<h2 data-x="15" data-y="13"></h2>
+			<h2 data-x="25" data-y="13"></h2>
+			<h2 data-x="15" data-y="14"></h2>
+			<h2 data-x="25" data-y="14"></h2>
+
+			<h5 data-x="11" data-y="11"></h5>
+
+			<a id="1" href="#2" data-x="7" data-y="14"></a>
+			<a id="2" href="#1" data-x="24" data-y="14"></a>
+
+			<h3 data-x="5" data-y="11" data-item="flower"></h3>
+			<h3 data-x="6" data-y="11" data-item="mushroom"></h3>
+
+			<i data-x="11" data-y="15"></i>
+
+			<h3 data-x="4" data-y="11" data-item="star"></h3>
+
+			<aside data-x="4" data-y="8"></aside>
+
+			<input type="boss" name="bowser" data-x="21" data-y="14" />
 		</div>
 
 		<!-- ████████████████ FIN DE LA ZONE ÉLÈVE ████████████████
@@ -156,9 +159,11 @@
 				<div class="g-card">
 					<img class="g-icon" src="assets/question.png" alt="Bloc ?" />
 					<div>
-						<div class="g-tag">&lt;h3 data-x="?" data-y="?"&gt;</div>
-						<div class="g-name">BLOC ? — frappe dessous = pièce !</div>
-						<div class="g-pos">x: 1-25 · y: 1-15</div>
+						<div class="g-tag">&lt;h3 data-x="?" data-y="?" data-item="?"&gt;</div>
+						<div class="g-name">BLOC ? — frappe dessous pour libérer un objet</div>
+						<div class="g-pos">
+							x: 1-25 · y: 1-15 · data-item="coin" (défaut) | "star" | "mushroom" | "flower"
+						</div>
 					</div>
 				</div>
 				<div class="g-card">
@@ -178,11 +183,30 @@
 					</div>
 				</div>
 				<div class="g-card">
+					<div class="g-icon" style="font-size: 28px">🔥</div>
+					<div>
+						<div class="g-tag">&lt;i data-x="?" data-y="?"&gt;</div>
+						<div class="g-name">LAVE — traversable mais MORT INSTANTANÉE !</div>
+						<div class="g-pos">x: 1-25 · y: 1-15</div>
+					</div>
+				</div>
+				<div class="g-card">
 					<img class="g-icon" src="assets/cloud.png" alt="Nuage" />
 					<div>
 						<div class="g-tag">&lt;h5 data-x="?" data-y="?"&gt;</div>
 						<div class="g-name">NUAGE — plateforme traversable</div>
 						<div class="g-pos">x: 1-25 · y: 1-15</div>
+					</div>
+				</div>
+				<div class="g-card">
+					<div class="g-icon" style="font-size: 28px">🪜</div>
+					<div>
+						<div class="g-tag">&lt;aside data-x="?" data-y="?"&gt;</div>
+						<div class="g-name">PLATEFORME MOBILE — bouge horizontalement</div>
+						<div class="g-pos">
+							x: 1-25 · y: 1-15 · data-w (largeur, défaut 2) · data-range (portée, défaut 4) ·
+							data-speed (vitesse, défaut 1.2)
+						</div>
 					</div>
 				</div>
 				<div class="g-card">
@@ -244,7 +268,7 @@
 			</div>
 			<div class="ctrl-hint">
 				⌨️ Clavier : ← → pour bouger · ↑ ou ESPACE pour sauter · ↓ sur un tuyau lié pour téléporter
-				· ENTRÉE pour recommencer<br />
+				· E pour lancer une boule de feu (avec fleur 🌸) · ENTRÉE pour recommencer<br />
 				📱 Mobile : utilise les boutons ◀ ▲ ▶ ci-dessus<br /><br />
 				🎮 Balise <strong>&lt;input&gt;</strong> — l'attribut <strong>name</strong> détermine le
 				type :<br />
@@ -254,7 +278,15 @@
 				&nbsp;&nbsp;🔥 <code>type="boss" name="bowser"</code> → Boss Bowser · taille ×2 · 3 coups ·
 				boules de feu toutes les 3 s<br />
 				&nbsp;&nbsp;🍄 <code>name="mario"</code> → point de départ de Mario (1 seul par niveau)<br />
-				&nbsp;&nbsp;Sans <code>name="mario"</code>, Mario apparaît au-dessus du 1er bloc de sol.
+				&nbsp;&nbsp;Sans <code>name="mario"</code>, Mario apparaît au-dessus du 1er bloc de sol.<br /><br />
+				🎁 Balise <strong>&lt;h3&gt;</strong> — l'attribut <strong>data-item</strong> détermine
+				l'objet libéré :<br />
+				&nbsp;&nbsp;🪙 <code>data-item="coin"</code> → pièce (+50 pts) · défaut<br />
+				&nbsp;&nbsp;⭐ <code>data-item="star"</code> → étoile · invincibilité 5 s avec aura
+				arc-en-ciel<br />
+				&nbsp;&nbsp;🍄 <code>data-item="mushroom"</code> → champignon · Mario grandit · +1 ❤️<br />
+				&nbsp;&nbsp;🌸 <code>data-item="flower"</code> → fleur · Mario rose · +1 ❤️ · touche
+				<strong>E</strong> = boule de feu
 			</div>
 		</div>
 

@@ -54,9 +54,12 @@ let blockList = [];
 let coins = [];
 let enemies = [];
 let fireballs = [];
+let items = [];
 let particles = [];
 let goalCell = null;
 let pipes = [];
+let platforms = [];
+let marioSpawn = null;
 
 // Player & score
 let player = null;
@@ -67,7 +70,15 @@ let score = 0;
 // ┌──────────────────────────────────────────┐
 // │  INPUT                                   │
 // └──────────────────────────────────────────┘
-const K = { left: false, right: false, jump: false, down: false, downPress: false };
+const K = {
+	left: false,
+	right: false,
+	jump: false,
+	down: false,
+	downPress: false,
+	fire: false,
+	firePress: false
+};
 let jumpBuffer = 0; // frames remaining to honour a queued jump
 
 document.addEventListener("keydown", (e) => {
@@ -97,6 +108,10 @@ document.addEventListener("keydown", (e) => {
 		if (!K.down) K.downPress = true;
 		K.down = true;
 	}
+	if (e.key === "e" || e.key === "E") {
+		if (!K.fire) K.firePress = true;
+		K.fire = true;
+	}
 	if (e.key === "Enter" && gameState !== "playing") startGame();
 });
 
@@ -108,6 +123,7 @@ document.addEventListener("keyup", (e) => {
 	if (e.key === "ArrowRight" || e.key === "d") K.right = false;
 	if (e.key === "ArrowUp" || e.key === "w" || e.key === " ") K.jump = false;
 	if (e.key === "ArrowDown" || e.key === "s") K.down = false;
+	if (e.key === "e" || e.key === "E") K.fire = false;
 });
 
 // Touch/mouse buttons
@@ -162,13 +178,15 @@ function parseLevel() {
 	blockList = [];
 	coins = [];
 	enemies = [];
+	items = [];
 	goalCell = null;
 	pipes = [];
-	let marioSpawn = null;
+	platforms = [];
+	marioSpawn = null;
 
 	document
 		.querySelectorAll(
-			"#my-level h1,#my-level h2,#my-level h3,#my-level a,#my-level h5,#my-level h6,#my-level hr,#my-level p,#my-level input,#my-level button"
+			"#my-level h1,#my-level h2,#my-level h3,#my-level a,#my-level h5,#my-level h6,#my-level hr,#my-level p,#my-level i,#my-level aside,#my-level input,#my-level button"
 		)
 		.forEach((el) => {
 			const tag = el.tagName.toLowerCase();
@@ -189,9 +207,12 @@ function parseLevel() {
 				case "h2":
 					addTile(gx, gy, "brick", colorClass);
 					break;
-				case "h3":
-					addTile(gx, gy, "question", colorClass);
+				case "h3": {
+					const qb = addTile(gx, gy, "question", colorClass);
+					const item = (el.dataset.item || "coin").toLowerCase();
+					qb.item = ["coin", "star", "mushroom", "flower"].includes(item) ? item : "coin";
 					break;
+				}
 				case "a": {
 					const pipeGy = Math.min(gy, ROWS - 2);
 					addTile(gx, pipeGy, "pipe_top", colorClass);
@@ -208,6 +229,28 @@ function parseLevel() {
 				case "hr":
 					addTile(gx, gy, "spike", colorClass);
 					break;
+				case "i":
+					addTile(gx, gy, "lava", colorClass);
+					break;
+				case "aside": {
+					const widthTiles = Math.max(1, parseInt(el.dataset.w) || 2);
+					const rangeTiles = Math.max(1, parseInt(el.dataset.range) || 4);
+					const speed = parseFloat(el.dataset.speed) || 1.2;
+					const x = gx * TILE;
+					const minX = Math.max(0, x - rangeTiles * TILE);
+					const maxX = Math.min(GW, x + (widthTiles + rangeTiles) * TILE);
+					platforms.push({
+						x,
+						y: gy * TILE + TILE - 12,
+						w: widthTiles * TILE,
+						h: 12,
+						vx: speed,
+						minX,
+						maxX,
+						colorClass
+					});
+					break;
+				}
 				case "h6":
 					goalCell = { gx, gy, colorClass };
 					break;
@@ -250,6 +293,7 @@ function addTile(gx, gy, type, colorClass = null) {
 	const b = { gx, gy, type, used: false, colorClass };
 	tileMap[`${gx},${gy}`] = b;
 	blockList.push(b);
+	return b;
 }
 
 function getTile(gx, gy) {
@@ -275,7 +319,11 @@ function makePlayer(x, y) {
 		pipeState: null,
 		pipeTick: 0,
 		pipeClipY: 0,
-		pipeLinkedTo: null
+		pipeLinkedTo: null,
+		big: false,
+		fire: false,
+		starInvincible: 0,
+		fireCooldown: 0
 	};
 }
 
@@ -327,8 +375,8 @@ function makeEnemy(gx, gy, colorClass = null, enemyType = "goomba") {
 // │  PHYSIQUE & COLLISIONS                   │
 // └──────────────────────────────────────────┘
 function isSolid(type) {
-	// 'cloud' is one-way only
-	return type !== "cloud";
+	// 'cloud' is one-way only; 'lava' is pass-through (instant death on contact)
+	return type !== "cloud" && type !== "lava";
 }
 
 /*  moveY — move entity vertically, then resolve tile collisions.
@@ -337,6 +385,7 @@ function moveY(ent, allowOneWay) {
 	const prevBottom = ent.y + ent.h;
 	ent.y += ent.vy;
 	ent.onGround = false;
+	ent.platform = null;
 
 	const txL = Math.floor(ent.x / TILE);
 	const txR = Math.floor((ent.x + ent.w - 1) / TILE);
@@ -344,6 +393,7 @@ function moveY(ent, allowOneWay) {
 	if (ent.vy >= 0) {
 		// Falling — check floor
 		const tyFoot = Math.floor((ent.y + ent.h - 1) / TILE);
+		let landed = false;
 		for (let tx = txL; tx <= txR; tx++) {
 			const b = getTile(tx, tyFoot);
 			if (!b) continue;
@@ -352,13 +402,32 @@ function moveY(ent, allowOneWay) {
 				ent.y = tileTop - ent.h;
 				ent.vy = 0;
 				ent.onGround = true;
+				landed = true;
 				break;
 			}
-			if (allowOneWay && b.type === "cloud" && prevBottom <= tileTop + 1) {
+			if (allowOneWay && b.type === "cloud" && !b.falling && prevBottom <= tileTop + 1) {
 				ent.y = tileTop - ent.h;
 				ent.vy = 0;
 				ent.onGround = true;
+				landed = true;
+				if (ent === player && !b.destroying) {
+					b.destroying = true;
+					b.destroyTimer = 60;
+				}
 				break;
+			}
+		}
+		// Moving platforms (one-way, land from above)
+		if (!landed && allowOneWay) {
+			for (const p of platforms) {
+				if (ent.x + ent.w <= p.x || ent.x >= p.x + p.w) continue;
+				if (prevBottom <= p.y + 1 && ent.y + ent.h >= p.y) {
+					ent.y = p.y - ent.h;
+					ent.vy = 0;
+					ent.onGround = true;
+					ent.platform = p;
+					break;
+				}
 			}
 		}
 	} else {
@@ -370,10 +439,15 @@ function moveY(ent, allowOneWay) {
 				ent.y = (tyHead + 1) * TILE;
 				if (b.type === "question" && !b.used && ent === player) {
 					b.used = true;
-					score += 50;
-					coinCount++;
-					updateHUD();
-					addParticle(b.gx * TILE + TILE / 2, b.gy * TILE - 4, "+50 🪙", "#f8b800");
+					const item = b.item || "coin";
+					if (item === "coin") {
+						score += 50;
+						coinCount++;
+						updateHUD();
+						addParticle(b.gx * TILE + TILE / 2, b.gy * TILE - 4, "+50 🪙", "#f8b800");
+					} else {
+						spawnItem(item, b.gx, b.gy);
+					}
 				}
 				ent.vy = 0;
 				break;
@@ -440,6 +514,7 @@ function startGame() {
 	score = 0;
 	particles = [];
 	fireballs = [];
+	items = [];
 	frame = 0;
 	jumpBuffer = 0;
 	gameState = "playing";
@@ -489,6 +564,9 @@ function update() {
 		return;
 	}
 
+	// ── Moving platforms (must run before player physics so carry works) ──
+	updatePlatforms();
+
 	// ── Player input ──
 	if (K.left) {
 		player.vx = -MOVE_SPD;
@@ -529,23 +607,52 @@ function update() {
 	else player.walkTick = 0;
 
 	if (player.invincible > 0) player.invincible--;
+	if (player.starInvincible > 0) player.starInvincible--;
+	if (player.fireCooldown > 0) player.fireCooldown--;
+
+	// ── Throw fireball (flower power) ──
+	if (K.firePress) {
+		K.firePress = false;
+		if (player.fire && player.fireCooldown === 0) {
+			spawnPlayerFireball();
+			player.fireCooldown = 14;
+		}
+	}
+
+	// ── Lava: instant game over on any overlap (invincibility shields the player) ──
+	if (player.invincible === 0 && player.starInvincible === 0) {
+		const txL = Math.floor(player.x / TILE);
+		const txR = Math.floor((player.x + player.w - 1) / TILE);
+		const tyT = Math.floor(player.y / TILE);
+		const tyB = Math.floor((player.y + player.h - 1) / TILE);
+		let lavaHit = false;
+		for (let ty = tyT; ty <= tyB && !lavaHit; ty++) {
+			for (let tx = txL; tx <= txR && !lavaHit; tx++) {
+				const b = getTile(tx, ty);
+				if (b && b.type === "lava") lavaHit = true;
+			}
+		}
+		if (lavaHit) {
+			lives = 0;
+			player.invincible = 80;
+			player.vy = -4;
+			updateHUD();
+			gameState = "dead";
+			addParticle(player.x + player.w / 2, player.y, "🔥 LAVA !", "#ff4400");
+			setTimeout(() => showOverlay("dead"), 700);
+			return;
+		}
+	}
 
 	// ── Spike damage ──
-	if (player.onGround && player.invincible === 0) {
+	if (player.onGround && player.invincible === 0 && player.starInvincible === 0) {
 		const footTileY = Math.floor((player.y + player.h) / TILE);
 		const txL = Math.floor(player.x / TILE);
 		const txR = Math.floor((player.x + player.w - 1) / TILE);
 		for (let tx = txL; tx <= txR; tx++) {
 			const b = getTile(tx, footTileY);
 			if (b && b.type === "spike") {
-				lives--;
-				player.invincible = 80;
-				player.vy = -9;
-				updateHUD();
-				if (lives <= 0) {
-					gameState = "dead";
-					setTimeout(() => showOverlay("dead"), 700);
-				}
+				damagePlayer(null);
 				break;
 			}
 		}
@@ -566,6 +673,29 @@ function update() {
 			}
 		}
 	}
+
+	// ── Cloud destruction ──
+	let cloudPurge = false;
+	for (const b of blockList) {
+		if (b.type !== "cloud") continue;
+		if (b.destroying && !b.falling) {
+			b.destroyTimer--;
+			if (b.destroyTimer <= 0) {
+				b.falling = true;
+				b.fallY = 0;
+				b.fallVy = 0;
+				delete tileMap[`${b.gx},${b.gy}`];
+			}
+		} else if (b.falling) {
+			b.fallVy = Math.min(b.fallVy + GRAVITY, MAX_FALL);
+			b.fallY += b.fallVy;
+			if (b.gy * TILE + b.fallY > GH + TILE) {
+				b.dead = true;
+				cloudPurge = true;
+			}
+		}
+	}
+	if (cloudPurge) blockList = blockList.filter((b) => !b.dead);
 
 	// ── Enemies ──
 	for (const e of enemies) {
@@ -610,7 +740,22 @@ function update() {
 		}
 
 		// ── Player ↔ Enemy ──
-		if (player.invincible === 0 && overlap(player, e)) {
+		// While invincible (star or post-damage), contact damages regular enemies.
+		if (overlap(player, e)) {
+			if (
+				(player.starInvincible > 0 || player.invincible > 0) &&
+				e.enemyType !== "bowser"
+			) {
+				e.alive = false;
+				e.squishTimer = 28;
+				score += 200;
+				updateHUD();
+				const icon = player.starInvincible > 0 ? "⭐" : "✨";
+				addParticle(e.x + e.w / 2, e.y, `+200 ${icon}`, "#f8b800");
+				continue;
+			}
+		}
+		if (player.invincible === 0 && player.starInvincible === 0 && overlap(player, e)) {
 			if (player.vy > 0 && player.y + player.h < e.y + e.h * 0.55) {
 				if (e.enemyType === "bowser") {
 					if (e.hitFlash === 0) {
@@ -639,22 +784,17 @@ function update() {
 					addParticle(e.x + e.w / 2, e.y, "+200 ⭐", "#44ff88");
 				}
 			} else {
-				// Hit — lose a life
-				lives--;
-				player.invincible = 80;
-				player.vx = player.x < e.x ? -4.5 : 4.5;
-				player.vy = -6;
-				updateHUD();
-				if (lives <= 0) {
-					gameState = "dead";
-					setTimeout(() => showOverlay("dead"), 700);
-				}
+				// Hit — ungrow if big, lose a life
+				damagePlayer(e.x);
 			}
 		}
 	}
 
 	// ── Fireballs ──
 	updateFireballs();
+
+	// ── Items (star, mushroom, flower) ──
+	updateItems();
 
 	// ── Coins ──
 	for (const c of coins) {
@@ -706,20 +846,29 @@ function update() {
 }
 
 function respawn() {
-	const bases = blockList
-		.filter((b) => b.type === "ground" || b.type === "brick")
-		.sort((a, b) => a.gx - b.gx);
-	if (bases.length > 0) {
-		player.x = bases[0].gx * TILE + (TILE - PLAYER_W) / 2;
-		player.y = bases[0].gy * TILE - PLAYER_H;
+	if (marioSpawn) {
+		player.x = marioSpawn.gx * TILE + (TILE - PLAYER_W) / 2;
+		player.y = marioSpawn.gy * TILE - PLAYER_H;
 	} else {
-		player.x = TILE;
-		player.y = GH / 2;
+		const bases = blockList
+			.filter((b) => b.type === "ground" || b.type === "brick")
+			.sort((a, b) => a.gx - b.gx);
+		if (bases.length > 0) {
+			player.x = bases[0].gx * TILE + (TILE - PLAYER_W) / 2;
+			player.y = bases[0].gy * TILE - PLAYER_H;
+		} else {
+			player.x = TILE;
+			player.y = GH / 2;
+		}
 	}
 	player.vx = 0;
 	player.vy = 0;
 	player.invincible = 80;
 	player.pipeState = null;
+	player.big = false;
+	player.fire = false;
+	player.h = PLAYER_H;
+	player.w = PLAYER_W;
 }
 
 function spawnFireball(bowser) {
@@ -752,25 +901,65 @@ function updateFireballs() {
 			txR = Math.floor((fb.x + fb.w - 1) / TILE);
 		const tyT = Math.floor(fb.y / TILE),
 			tyB = Math.floor((fb.y + fb.h - 1) / TILE);
-		let hit = false;
-		for (let ty = tyT; ty <= tyB && !hit; ty++)
-			for (let tx = txL; tx <= txR && !hit; tx++)
-				if ((getTile(tx, ty) || {}).type && isSolid(getTile(tx, ty).type)) hit = true;
-		if (hit) {
-			fb.alive = false;
-			continue;
+		let hitTile = null;
+		let hitTy = -1;
+		for (let ty = tyT; ty <= tyB && !hitTile; ty++) {
+			for (let tx = txL; tx <= txR && !hitTile; tx++) {
+				const t = getTile(tx, ty);
+				if (t && isSolid(t.type)) {
+					hitTile = t;
+					hitTy = ty;
+				}
+			}
 		}
-		// Player collision
-		if (player.invincible === 0 && overlap(player, fb)) {
-			fb.alive = false;
-			lives--;
-			player.invincible = 80;
-			player.vx = player.x < fb.x ? -4.5 : 4.5;
-			player.vy = -6;
-			updateHUD();
-			if (lives <= 0) {
-				gameState = "dead";
-				setTimeout(() => showOverlay("dead"), 700);
+		if (hitTile) {
+			if (fb.friendly && fb.vy > 0 && fb.bounces < 3) {
+				// Bounce off floor for player fireballs
+				fb.y = hitTy * TILE - fb.h;
+				fb.vy = -6;
+				fb.bounces++;
+			} else {
+				fb.alive = false;
+				continue;
+			}
+		}
+
+		if (fb.friendly) {
+			// Player fireball hits enemies
+			for (const e of enemies) {
+				if (!e.alive) continue;
+				if (overlap(fb, e)) {
+					fb.alive = false;
+					if (e.enemyType === "bowser") {
+						if (e.hitFlash === 0) {
+							e.hp--;
+							e.hitFlash = 60;
+							const cx = e.x + e.w / 2;
+							if (e.hp <= 0) {
+								e.alive = false;
+								e.squishTimer = 90;
+								score += 1000;
+								updateHUD();
+								addParticle(cx, e.y + 4, "+1000 ⭐", "#f8b800");
+							} else {
+								addParticle(cx, e.y + 4, "🔥", "#ff6600");
+							}
+						}
+					} else {
+						e.alive = false;
+						e.squishTimer = 28;
+						score += 200;
+						updateHUD();
+						addParticle(e.x + e.w / 2, e.y, "+200 🔥", "#ff8844");
+					}
+					break;
+				}
+			}
+		} else {
+			// Enemy fireball hits player
+			if (player.invincible === 0 && player.starInvincible === 0 && overlap(player, fb)) {
+				fb.alive = false;
+				damagePlayer(fb.x);
 			}
 		}
 	}
@@ -779,6 +968,235 @@ function updateFireballs() {
 
 function overlap(a, b) {
 	return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+}
+
+// Apply damage to the player: ungrow & lose flower if active, lose a life, brief invincibility & knockback.
+function damagePlayer(knockbackFromX) {
+	if (player.big) {
+		const dh = player.h - PLAYER_H;
+		player.big = false;
+		player.h = PLAYER_H;
+		player.w = PLAYER_W;
+		player.y += dh;
+	}
+	player.fire = false;
+	lives--;
+	player.invincible = 80;
+	if (knockbackFromX != null) {
+		player.vx = player.x < knockbackFromX ? -4.5 : 4.5;
+		player.vy = -6;
+	} else {
+		player.vy = -9;
+	}
+	updateHUD();
+	if (lives <= 0) {
+		gameState = "dead";
+		setTimeout(() => showOverlay("dead"), 700);
+	}
+}
+
+// ── Items dropped from question blocks ──
+function spawnItem(type, gx, gy) {
+	const cx = gx * TILE + TILE / 2;
+	const baseY = gy * TILE - 22;
+	const dir = player && player.x + player.w / 2 > cx ? -1 : 1;
+	if (type === "star") {
+		items.push({
+			type,
+			x: cx - 10,
+			y: baseY,
+			vx: dir * 2.4,
+			vy: -8,
+			w: 20,
+			h: 20,
+			alive: true,
+			frame: 0
+		});
+	} else {
+		items.push({
+			type,
+			x: cx - 11,
+			y: baseY,
+			vx: dir * 1.8,
+			vy: 0,
+			w: 22,
+			h: 22,
+			alive: true,
+			frame: 0
+		});
+	}
+	addParticle(cx, gy * TILE - 4, type === "star" ? "⭐" : type === "mushroom" ? "🍄" : "🌸", "#fff");
+}
+
+function updateItems() {
+	for (const it of items) {
+		if (!it.alive) continue;
+		it.frame++;
+
+		// Vertical movement & gravity
+		it.vy = Math.min(it.vy + GRAVITY, MAX_FALL);
+		const prevBottom = it.y + it.h;
+		it.y += it.vy;
+		const txL = Math.floor(it.x / TILE);
+		const txR = Math.floor((it.x + it.w - 1) / TILE);
+
+		if (it.vy >= 0) {
+			const tyFoot = Math.floor((it.y + it.h - 1) / TILE);
+			for (let tx = txL; tx <= txR; tx++) {
+				const b = getTile(tx, tyFoot);
+				if (!b) continue;
+				const tileTop = tyFoot * TILE;
+				const supports = isSolid(b.type) || (b.type === "cloud" && !b.falling);
+				if (supports && prevBottom <= tileTop + 1) {
+					it.y = tileTop - it.h;
+					if (it.type === "star") {
+						it.vy = -10;
+					} else {
+						it.vy = 0;
+					}
+					break;
+				}
+			}
+		} else {
+			const tyHead = Math.floor(it.y / TILE);
+			for (let tx = txL; tx <= txR; tx++) {
+				const b = getTile(tx, tyHead);
+				if (b && isSolid(b.type)) {
+					it.y = (tyHead + 1) * TILE;
+					it.vy = 0;
+					break;
+				}
+			}
+		}
+
+		// Horizontal movement & wall bounce
+		it.x += it.vx;
+		const tyT = Math.floor(it.y / TILE);
+		const tyB = Math.floor((it.y + it.h - 1) / TILE);
+		if (it.vx > 0) {
+			const txR2 = Math.floor((it.x + it.w - 1) / TILE);
+			for (let ty = tyT; ty <= tyB; ty++) {
+				const b = getTile(txR2, ty);
+				if (b && isSolid(b.type)) {
+					it.x = txR2 * TILE - it.w;
+					it.vx *= -1;
+					break;
+				}
+			}
+		} else if (it.vx < 0) {
+			const txL2 = Math.floor(it.x / TILE);
+			for (let ty = tyT; ty <= tyB; ty++) {
+				const b = getTile(txL2, ty);
+				if (b && isSolid(b.type)) {
+					it.x = (txL2 + 1) * TILE;
+					it.vx *= -1;
+					break;
+				}
+			}
+		}
+		if (it.x < 0) {
+			it.x = 0;
+			it.vx = Math.abs(it.vx);
+		} else if (it.x + it.w > GW) {
+			it.x = GW - it.w;
+			it.vx = -Math.abs(it.vx);
+		}
+
+		// Bounce off enemies
+		for (const e of enemies) {
+			if (!e.alive) continue;
+			if (overlap(it, e)) {
+				it.vx = it.x + it.w / 2 < e.x + e.w / 2 ? -Math.abs(it.vx) : Math.abs(it.vx);
+				it.vy = -6;
+				break;
+			}
+		}
+
+		// Off-screen
+		if (it.y > GH + 60) {
+			it.alive = false;
+			continue;
+		}
+
+		// Player pickup
+		if (player && overlap(player, it)) {
+			it.alive = false;
+			applyItemEffect(it.type);
+		}
+	}
+	items = items.filter((i) => i.alive);
+}
+
+function applyItemEffect(type) {
+	const cx = player.x + player.w / 2;
+	const top = player.y;
+	if (type === "star") {
+		player.starInvincible = 300; // 5s @ 60fps
+		score += 1000;
+		updateHUD();
+		addParticle(cx, top, "⭐ INVINCIBLE !", "#f8b800");
+	} else if (type === "mushroom") {
+		if (!player.big) {
+			player.big = true;
+			const newH = Math.round(PLAYER_H * 1.3);
+			const dh = newH - player.h;
+			player.y -= dh;
+			player.h = newH;
+			player.w = Math.round(PLAYER_W * 1.2);
+		}
+		lives++;
+		score += 500;
+		updateHUD();
+		addParticle(cx, top, "🍄 +1 ❤️", "#ff4444");
+	} else if (type === "flower") {
+		player.fire = true;
+		if (!player.big) {
+			player.big = true;
+			const newH = Math.round(PLAYER_H * 1.3);
+			const dh = newH - player.h;
+			player.y -= dh;
+			player.h = newH;
+			player.w = Math.round(PLAYER_W * 1.2);
+		}
+		lives++;
+		score += 700;
+		updateHUD();
+		addParticle(cx, top, "🌸 FEU !", "#ff66cc");
+	}
+}
+
+function updatePlatforms() {
+	for (const p of platforms) {
+		const oldX = p.x;
+		p.x += p.vx;
+		if (p.x < p.minX) {
+			p.x = p.minX;
+			p.vx = Math.abs(p.vx);
+		} else if (p.x + p.w > p.maxX) {
+			p.x = p.maxX - p.w;
+			p.vx = -Math.abs(p.vx);
+		}
+		const dx = p.x - oldX;
+		// Carry the player if they're standing on this platform.
+		if (player && player.platform === p && dx !== 0) {
+			player.x = Math.max(0, Math.min(GW - player.w, player.x + dx));
+		}
+	}
+}
+
+function spawnPlayerFireball() {
+	fireballs.push({
+		x: player.dir > 0 ? player.x + player.w : player.x - 12,
+		y: player.y + player.h * 0.4,
+		vx: player.dir * 6,
+		vy: -1,
+		w: 12,
+		h: 12,
+		alive: true,
+		frame: 0,
+		friendly: true,
+		bounces: 0
+	});
 }
 
 // ┌──────────────────────────────────────────┐
@@ -796,10 +1214,12 @@ function render() {
 	drawBgClouds();
 
 	for (const b of blockList) drawBlock(b);
+	for (const p of platforms) drawPlatform(p);
 
 	if (goalCell) drawFlag(goalCell.gx, goalCell.gy, goalCell.colorClass);
 
 	for (const c of coins) if (!c.collected) drawCoin(c.gx, c.gy, c.colorClass);
+	for (const it of items) if (it.alive) drawItem(it);
 	for (const e of enemies) drawEnemy(e);
 	for (const fb of fireballs) if (fb.alive) drawFireball(fb);
 
@@ -984,12 +1404,53 @@ function drawBlock(b) {
 			ctx.fillRect(x + T - 7, y, 5, T);
 			break;
 
-		case "cloud":
+		case "cloud": {
+			let dx = 0;
+			let dy = 0;
+			let alpha = 1;
+			if (b.destroying && !b.falling) {
+				dx = (Math.random() - 0.5) * 4;
+				dy = (Math.random() - 0.5) * 4;
+			}
+			if (b.falling) {
+				dy = b.fallY || 0;
+				alpha = Math.max(0, 1 - dy / (GH * 0.5));
+			}
+			ctx.globalAlpha = alpha;
 			ctx.fillStyle = "rgba(210,225,255,0.88)";
 			ctx.beginPath();
-			cloudArc(x - 2, y + 6, 0.68);
+			cloudArc(x - 2 + dx, y + 6 + dy, 0.68);
 			ctx.fill();
+			ctx.globalAlpha = 1;
 			break;
+		}
+
+		case "lava": {
+			// Glowing molten body
+			const wave = Math.sin(frame * 0.1 + b.gx * 0.6) * 2;
+			const flick = (Math.sin(frame * 0.18 + b.gx * 1.3) + 1) * 0.5; // 0..1
+			ctx.fillStyle = "#5a0a00";
+			ctx.fillRect(x, y, T, T);
+			ctx.fillStyle = `rgb(${200 + flick * 55},${60 + flick * 80},0)`;
+			ctx.fillRect(x, y + 4, T, T - 4);
+			ctx.fillStyle = `rgb(${230 + flick * 25},${140 + flick * 90},${30 + flick * 50})`;
+			ctx.fillRect(x, y + 6, T, T - 8);
+			// Surface ripple
+			ctx.fillStyle = "#ffe066";
+			ctx.fillRect(x, y + 4 + wave, T, 2);
+			ctx.fillStyle = "#fff5b0";
+			ctx.fillRect(x + 4, y + 3 + wave, 6, 1);
+			ctx.fillRect(x + T - 12, y + 5 - wave, 8, 1);
+			// Bubbles
+			const bubX = x + ((frame * 0.7 + b.gx * 11) % T);
+			ctx.fillStyle = "#fff";
+			ctx.globalAlpha = 0.6;
+			ctx.beginPath();
+			ctx.arc(bubX, y + T - 6 - (frame % 30) * 0.2, 2, 0, Math.PI * 2);
+			ctx.fill();
+			ctx.globalAlpha = 1;
+			break;
+		}
 
 		case "spike": {
 			// Base plate
@@ -1019,6 +1480,34 @@ function drawBlock(b) {
 		}
 	}
 
+	ctx.restore();
+}
+
+// ── Moving platform ──
+function drawPlatform(p) {
+	const x = Math.round(p.x);
+	const y = Math.round(p.y);
+	ctx.save();
+	if (p.colorClass) ctx.filter = COLOR_FILTERS[p.colorClass];
+	// Body
+	ctx.fillStyle = "#8a5a2a";
+	ctx.fillRect(x, y, p.w, p.h);
+	// Top highlight
+	ctx.fillStyle = "#c8924a";
+	ctx.fillRect(x, y, p.w, 3);
+	// Bottom shadow
+	ctx.fillStyle = "#5a3a18";
+	ctx.fillRect(x, y + p.h - 2, p.w, 2);
+	// Bolts
+	ctx.fillStyle = "#f8d878";
+	for (let bx = 4; bx < p.w - 2; bx += 16) {
+		ctx.fillRect(x + bx, y + 4, 2, 2);
+		ctx.fillRect(x + bx, y + p.h - 5, 2, 2);
+	}
+	// Direction arrow on side
+	ctx.fillStyle = "rgba(255,255,255,0.35)";
+	const ax = p.vx > 0 ? x + p.w - 6 : x + 2;
+	ctx.fillRect(ax, y + p.h / 2 - 1, 4, 2);
 	ctx.restore();
 }
 
@@ -1164,6 +1653,25 @@ function drawFireball(fb) {
 	const x = Math.round(fb.x),
 		y = Math.round(fb.y);
 	const f = Math.floor(fb.frame / 4) % 2;
+	if (fb.friendly) {
+		ctx.save();
+		ctx.translate(x + fb.w / 2, y + fb.h / 2);
+		ctx.rotate((fb.frame * 0.5) % (Math.PI * 2));
+		ctx.fillStyle = "#ffd600";
+		ctx.beginPath();
+		ctx.arc(0, 0, 6, 0, Math.PI * 2);
+		ctx.fill();
+		ctx.fillStyle = "#ff6d00";
+		ctx.beginPath();
+		ctx.arc(0, 0, 4, 0, Math.PI * 2);
+		ctx.fill();
+		ctx.fillStyle = "#fff8b0";
+		ctx.beginPath();
+		ctx.arc(-1, -1, 2, 0, Math.PI * 2);
+		ctx.fill();
+		ctx.restore();
+		return;
+	}
 	ctx.fillStyle = "#bf360c";
 	ctx.fillRect(x + 2, y, 8, 2);
 	ctx.fillRect(x, y + 2, 12, 8);
@@ -1174,6 +1682,86 @@ function drawFireball(fb) {
 	ctx.fillRect(x + 3 + f, y + 3, 5, 5);
 	ctx.fillStyle = "#ffffff";
 	ctx.fillRect(x + 4 + f, y + 4, 3, 3);
+}
+
+function drawItem(it) {
+	const x = Math.round(it.x),
+		y = Math.round(it.y);
+	if (it.type === "star") {
+		const t = it.frame * 0.2;
+		const hue = (it.frame * 6) % 360;
+		ctx.save();
+		ctx.translate(x + it.w / 2, y + it.h / 2);
+		ctx.rotate(t);
+		ctx.fillStyle = `hsl(${hue},100%,60%)`;
+		ctx.beginPath();
+		const R = 11,
+			r = 4;
+		for (let i = 0; i < 10; i++) {
+			const ang = (Math.PI / 5) * i - Math.PI / 2;
+			const rad = i % 2 === 0 ? R : r;
+			const px = Math.cos(ang) * rad;
+			const py = Math.sin(ang) * rad;
+			if (i === 0) ctx.moveTo(px, py);
+			else ctx.lineTo(px, py);
+		}
+		ctx.closePath();
+		ctx.fill();
+		ctx.fillStyle = "#fff";
+		ctx.beginPath();
+		ctx.arc(-2, -2, 2, 0, Math.PI * 2);
+		ctx.fill();
+		ctx.restore();
+	} else if (it.type === "mushroom") {
+		// Red cap
+		ctx.fillStyle = "#cc0000";
+		ctx.fillRect(x + 2, y + 2, it.w - 4, 4);
+		ctx.fillRect(x, y + 6, it.w, 7);
+		// Cap shadow
+		ctx.fillStyle = "#990000";
+		ctx.fillRect(x, y + 11, it.w, 2);
+		// White spots
+		ctx.fillStyle = "#fff";
+		ctx.fillRect(x + 4, y + 5, 4, 4);
+		ctx.fillRect(x + it.w - 8, y + 7, 4, 4);
+		ctx.fillRect(x + it.w / 2 - 1, y + 3, 3, 3);
+		// Stem
+		ctx.fillStyle = "#ffe6b3";
+		ctx.fillRect(x + 5, y + 13, it.w - 10, it.h - 14);
+		ctx.fillStyle = "#cc9966";
+		ctx.fillRect(x + 5, y + it.h - 3, it.w - 10, 2);
+		// Eyes
+		ctx.fillStyle = "#000";
+		ctx.fillRect(x + 7, y + 15, 2, 3);
+		ctx.fillRect(x + it.w - 9, y + 15, 2, 3);
+	} else if (it.type === "flower") {
+		const bob = Math.sin(it.frame * 0.2) * 1.5;
+		// Stem
+		ctx.fillStyle = "#2a8e2a";
+		ctx.fillRect(x + it.w / 2 - 1, y + 12, 2, it.h - 12);
+		// Leaf
+		ctx.fillStyle = "#3da830";
+		ctx.fillRect(x + 4, y + 16, 5, 3);
+		ctx.fillRect(x + it.w - 9, y + 18, 5, 3);
+		// Petals (pink)
+		ctx.fillStyle = "#ff66cc";
+		const cx = x + it.w / 2;
+		const cy = y + 8 + bob;
+		ctx.beginPath();
+		ctx.arc(cx, cy - 4, 4, 0, Math.PI * 2);
+		ctx.arc(cx - 5, cy, 4, 0, Math.PI * 2);
+		ctx.arc(cx + 5, cy, 4, 0, Math.PI * 2);
+		ctx.arc(cx, cy + 4, 4, 0, Math.PI * 2);
+		ctx.fill();
+		// Center
+		ctx.fillStyle = "#ffeb3b";
+		ctx.beginPath();
+		ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+		ctx.fill();
+		ctx.fillStyle = "#000";
+		ctx.fillRect(cx - 2, cy - 1, 1, 1);
+		ctx.fillRect(cx + 1, cy - 1, 1, 1);
+	}
 }
 
 function drawBowserSprite(e, x, y) {
@@ -1362,8 +1950,13 @@ function drawEnemy(e) {
 function drawPlayer() {
 	const x = Math.round(player.x);
 
-	// Blink when invincible
-	if (player.invincible > 0 && Math.floor(player.invincible / 5) % 2 === 1) return;
+	// Blink when invincible (damage immunity, not star)
+	if (
+		player.invincible > 0 &&
+		player.starInvincible === 0 &&
+		Math.floor(player.invincible / 5) % 2 === 1
+	)
+		return;
 
 	// Pipe animation: slide into / out of pipe with clipping
 	let y = Math.round(player.y);
@@ -1385,9 +1978,49 @@ function drawPlayer() {
 
 	const wf = player.onGround ? Math.floor(player.walkTick / 7) % 3 : -1;
 
+	// Star glow aura
+	if (player.starInvincible > 0) {
+		const pulse = 0.5 + 0.5 * Math.sin(frame * 0.4);
+		const hue = (frame * 8) % 360;
+		ctx.save();
+		ctx.globalAlpha = 0.55 + 0.25 * pulse;
+		const grad = ctx.createRadialGradient(
+			x + player.w / 2,
+			y + player.h / 2,
+			2,
+			x + player.w / 2,
+			y + player.h / 2,
+			player.w
+		);
+		grad.addColorStop(0, `hsla(${hue},100%,70%,0.95)`);
+		grad.addColorStop(1, `hsla(${hue},100%,60%,0)`);
+		ctx.fillStyle = grad;
+		ctx.beginPath();
+		ctx.arc(x + player.w / 2, y + player.h / 2, player.w * 1.1, 0, Math.PI * 2);
+		ctx.fill();
+		ctx.restore();
+	}
+
 	ctx.save();
+
+	// Pink tint for fire mode + rainbow for star
+	const filters = [];
+	if (player.fire) filters.push("hue-rotate(310deg) saturate(1.4)");
+	if (player.starInvincible > 0) {
+		const hue = (frame * 12) % 360;
+		filters.push(`hue-rotate(${hue}deg) saturate(1.6) brightness(1.15)`);
+	}
+	if (filters.length) ctx.filter = filters.join(" ");
+
+	// Big mode: scale up sprite around top-left of hitbox
+	if (player.big) {
+		ctx.translate(x, y);
+		ctx.scale(player.w / PLAYER_W, player.h / PLAYER_H);
+		ctx.translate(-x, -y);
+	}
+
 	if (player.dir === -1) {
-		ctx.translate(x + player.w, 0);
+		ctx.translate(x + PLAYER_W, 0);
 		ctx.scale(-1, 1);
 		ctx.translate(-x, 0);
 	}
